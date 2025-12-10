@@ -4,7 +4,6 @@
     "slug": "unimarket",
     "version": "1.0.0",
     "orientation": "portrait",
-    
     "userInterfaceStyle": "light",
     "splash": {
       "resizeMode": "contain",
@@ -19,7 +18,6 @@
     },
     "android": {
       "adaptiveIcon": {
-        
         "backgroundColor": "#ffffff"
       },
       "package": "com.unimarket.app"
@@ -28,8 +26,15 @@
     "plugins": [
       "expo-router"
     ],
-    "scheme": "unimarket"
+    "scheme": "unimarket",
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "3758e45d-e5f1-4923-815a-5157f577df78"
+      }
+    },
+    "owner": "jaredvinnie"
   }
 }
-
-

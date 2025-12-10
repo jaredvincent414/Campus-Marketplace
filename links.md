@@ -59,6 +59,6 @@ Record your app running on a **real phone** and upload it to **Google Drive**.
 
 | # | Description | Link |
 |---|--------------|------|
-| 1 | **Installable Android Build** | [Paste your EAS build link here](https://expo.dev/artifacts/eas/...) |
+| 1 | **Installable Android Build** | [https://expo.dev/accounts/jaredvinnie/projects/unimarket](https://expo.dev/artifacts/eas/...) |
 | 2 | **Backend URL** | [https://vincent-final-project.onrender.com/](https://your-app-name.onrender.com/) |
 | 3 | **Demo Video (Google Drive)** | [https://drive.google.com/file/d/1svna71p1DmmtTdo_nj8L9pbLtaieQB_q/view?usp=sharing](https://drive.google.com/...) |
