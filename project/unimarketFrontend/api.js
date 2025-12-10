@@ -1,6 +1,9 @@
-// API helper for backend communication
-// Change BASE_URL for production deployment
-const BASE_URL = "http://localhost:5001";
+
+import { Platform } from 'react-native';
+
+const LAN_HOST = "172.20.144.29"; 
+const DEV_HOST = Platform.OS === 'android' ? '10.0.2.2' : Platform.OS === 'ios' ? 'localhost' : LAN_HOST;
+const BASE_URL = __DEV__ ? `http://${DEV_HOST}:5001` : 'http://localhost:5001';
 
 /**
  * Fetch all listings from the backend

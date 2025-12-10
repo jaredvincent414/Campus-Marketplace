@@ -2,10 +2,9 @@
 import { Listing } from "../types";
 import { Platform } from "react-native";
 
-
-const DEV_HOST = "172.20.144.29"; 
-const HOST = Platform.OS === "ios" ? "localhost" : Platform.OS === "android" ? "10.0.2.2" : DEV_HOST;
-export const BASE_URL = __DEV__ ? `http://${HOST}:5000` : "http://localhost:5000";
+const LAN_HOST = "172.20.144.29"; 
+const DEV_HOST = Platform.OS === "android" ? "10.0.2.2" : Platform.OS === "ios" ? "localhost" : LAN_HOST;
+export const BASE_URL = __DEV__ ? `http://${DEV_HOST}:5001` : "http://localhost:5001";
 
 /**
  * Fetches all listings from the backend
