@@ -1,13 +1,13 @@
 // Market tab - main marketplace feed with search
 import React, { useState, useEffect } from "react";
 import {
-  View, Text, StyleSheet, SafeAreaView, Modal, Pressable, Alert, ScrollView,
+  View, Text, StyleSheet, SafeAreaView, Modal, Pressable, Alert, ScrollView, Image, Linking, Dimensions,
 } from "react-native";
 import { useListings } from "../../../src/contexts/ListingsContext";
 import { useUser } from "../../../src/contexts/UserContext";
 import { SearchBar } from "../../../src/components/SearchBar";
 import { ListingList } from "../../../src/components/ListingList";
-import { purchaseListing } from "../../../src/services/api";
+import { normalizeMediaUrl, purchaseListing } from "../../../src/services/api";
 import { Listing } from "../../../src/types";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -24,6 +24,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 const HORIZONTAL_PADDING = 20;
 const BRAND_COLOR = "#FF385C";
+const MODAL_IMAGE_WIDTH = Dimensions.get("window").width;
 
 export default function MarketScreen() {
   const { listings, loadListings } = useListings();
@@ -31,6 +32,7 @@ export default function MarketScreen() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   useEffect(() => {
     if (listings.length === 0) {
@@ -93,6 +95,40 @@ export default function MarketScreen() {
     user?.email &&
     selectedListing.userEmail.toLowerCase() === user.email.toLowerCase()
   );
+  const selectedMedia = selectedListing?.media || [];
+  const selectedImageUrls = Array.from(new Set(
+    [
+      normalizeMediaUrl(selectedListing?.imageUrl),
+      ...selectedMedia
+        .filter((item) => item.type === "image")
+        .map((item) => normalizeMediaUrl(item.url)),
+    ].filter(Boolean) as string[]
+  ));
+  const selectedVideos = selectedMedia.filter((item) => item.type === "video");
+
+  const openMediaUrl = async (url: string) => {
+    try {
+      const canOpen = await Linking.canOpenURL(url);
+      if (!canOpen) {
+        Alert.alert("Invalid URL", "Cannot open this media link.");
+        return;
+      }
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert("Error", "Failed to open media link.");
+    }
+  };
+
+  useEffect(() => {
+    setSelectedImageIndex(0);
+  }, [selectedListing?._id]);
+
+  const handleImageSlideEnd = (event: any) => {
+    const slideWidth = event?.nativeEvent?.layoutMeasurement?.width || 0;
+    if (!slideWidth) return;
+    const offsetX = event?.nativeEvent?.contentOffset?.x || 0;
+    setSelectedImageIndex(Math.round(offsetX / slideWidth));
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -157,6 +193,54 @@ export default function MarketScreen() {
             {selectedListing && (
               <>
                 <View style={[styles.modalImage, { backgroundColor: CATEGORY_COLORS[selectedListing.category] ?? "#E8927C" }]}>
+                  {selectedImageUrls.length > 0 ? (
+                    <>
+                      <ScrollView
+                        horizontal
+                        pagingEnabled
+                        showsHorizontalScrollIndicator={false}
+                        onMomentumScrollEnd={handleImageSlideEnd}
+                        style={styles.modalImageCarousel}
+                      >
+                        {selectedImageUrls.map((imageUrl) => (
+                          <Image
+                            key={imageUrl}
+                            source={{ uri: imageUrl }}
+                            style={styles.modalImageAsset}
+                            resizeMode="cover"
+                          />
+                        ))}
+                      </ScrollView>
+                      {selectedImageUrls.length > 1 && (
+                        <View style={styles.modalImageDots}>
+                          {selectedImageUrls.map((_, index) => (
+                            <View
+                              key={`dot-${index}`}
+                              style={[styles.modalImageDot, selectedImageIndex === index && styles.modalImageDotActive]}
+                            />
+                          ))}
+                        </View>
+                      )}
+                    </>
+                  ) : (
+                    <View style={styles.modalImageFallback}>
+                      <Ionicons name="image-outline" size={44} color="rgba(255,255,255,0.9)" />
+                      <Text style={styles.modalImageFallbackText}>No image provided</Text>
+                    </View>
+                  )}
+
+                  {selectedVideos.length > 0 && (
+                    <Pressable
+                      style={styles.modalVideoBadge}
+                      onPress={() => openMediaUrl(selectedVideos[0].url)}
+                    >
+                      <Ionicons name="play" size={12} color="#FFFFFF" />
+                      <Text style={styles.modalVideoBadgeText}>
+                        {selectedVideos.length} {selectedVideos.length === 1 ? "video" : "videos"}
+                      </Text>
+                    </Pressable>
+                  )}
+
                   <Pressable style={styles.closeButton} onPress={() => setSelectedListing(null)}>
                     <Ionicons name="close" size={20} color="#222222" />
                   </Pressable>
@@ -175,6 +259,24 @@ export default function MarketScreen() {
 
                   <Text style={styles.sectionLabel}>Description</Text>
                   <Text style={styles.sectionValue}>{selectedListing.description}</Text>
+
+                  {selectedVideos.length > 0 && (
+                    <>
+                      <Text style={styles.sectionLabel}>Videos</Text>
+                      {selectedVideos.map((video, index) => (
+                        <Pressable
+                          key={`${video.url}-${index}`}
+                          style={styles.videoLinkRow}
+                          onPress={() => openMediaUrl(video.url)}
+                        >
+                          <Ionicons name="play-circle-outline" size={18} color={BRAND_COLOR} />
+                          <Text style={styles.videoLinkText}>
+                            Watch video {index + 1}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </>
+                  )}
 
                   {selectedListing.userEmail && (
                     <>
@@ -321,9 +423,47 @@ const styles = StyleSheet.create({
   modalImage: {
     height: 200,
     width: "100%",
-    justifyContent: "flex-start",
-    alignItems: "flex-end",
+    justifyContent: "center",
+    alignItems: "center",
     padding: 16,
+    overflow: "hidden",
+  },
+  modalImageCarousel: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  modalImageAsset: {
+    width: MODAL_IMAGE_WIDTH,
+    height: "100%",
+  },
+  modalImageFallback: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  modalImageFallbackText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  modalImageDots: {
+    position: "absolute",
+    bottom: 12,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 6,
+    zIndex: 2,
+  },
+  modalImageDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "rgba(255,255,255,0.55)",
+  },
+  modalImageDotActive: {
+    width: 16,
+    backgroundColor: "#FFFFFF",
   },
   closeButton: {
     width: 36,
@@ -337,6 +477,25 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+    zIndex: 3,
+  },
+  modalVideoBadge: {
+    position: "absolute",
+    left: 16,
+    top: 16,
+    zIndex: 3,
+    borderRadius: 999,
+    backgroundColor: "rgba(0,0,0,0.58)",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  modalVideoBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "700",
   },
   modalBody: {
     padding: 20,
@@ -378,6 +537,23 @@ const styles = StyleSheet.create({
     color: "#222222",
     lineHeight: 22,
   },
+  videoLinkRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#FFD6DF",
+    borderRadius: 10,
+    backgroundColor: "#FFF7F9",
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    marginBottom: 8,
+    gap: 8,
+  },
+  videoLinkText: {
+    fontSize: 14,
+    color: "#FF385C",
+    fontWeight: "600",
+  },
   buyButton: {
     backgroundColor: "#FF385C",
     borderRadius: 12,
@@ -395,4 +571,3 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 });
-

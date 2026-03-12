@@ -1,8 +1,9 @@
 // Card component for displaying a single listing
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, Pressable, StyleSheet, Alert, Image } from "react-native";
 import { Listing } from "../types";
-import { deleteListing } from "../services/api";
+import { deleteListing, normalizeMediaUrl } from "../services/api";
+import { Ionicons } from "@expo/vector-icons";
 
 const CARD_RADIUS = 16;
 const MEDIA_RADIUS = 14;
@@ -45,7 +46,24 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   const placeholderColor = CATEGORY_COLORS[category] ?? "#E8927C";
   const emoji = CATEGORY_EMOJIS[category] ?? "🛍️";
   const metadataLine = [listing.condition, listing.locationName].filter(Boolean).join(" • ");
-  const hasImage = Boolean(listing.imageUrl);
+  const media = listing.media || [];
+  const imageUrls = Array.from(new Set(
+    [
+      normalizeMediaUrl(listing.imageUrl),
+      ...media
+        .filter((item) => item.type === "image")
+        .map((item) => normalizeMediaUrl(item.url)),
+    ].filter(Boolean) as string[]
+  ));
+  const primaryImage = imageUrls[0];
+  const imageCount = imageUrls.length;
+  const videoCount = media.filter((item) => item.type === "video").length;
+  const [imageLoadError, setImageLoadError] = useState(false);
+  const hasImage = Boolean(primaryImage) && !imageLoadError;
+
+  useEffect(() => {
+    setImageLoadError(false);
+  }, [primaryImage, listing._id]);
 
   const handleLongPress = () => {
     if (!isOwnListing) return;
@@ -79,16 +97,37 @@ export const ListingCard: React.FC<ListingCardProps> = ({
       <View style={[styles.mediaContainer, featured && styles.mediaContainerFeatured]}>
         {hasImage ? (
           <Image
-            source={{ uri: listing.imageUrl }}
+            source={{ uri: primaryImage }}
             style={styles.image}
             resizeMode="cover"
+            onError={() => setImageLoadError(true)}
           />
         ) : (
           <View style={[styles.imagePlaceholder, { backgroundColor: placeholderColor }]}>
             <View style={styles.placeholderBlobOne} />
             <View style={styles.placeholderBlobTwo} />
-            <Text style={styles.emoji}>{emoji}</Text>
+            {videoCount > 0 ? (
+              <Ionicons name="play-circle" size={44} color="#FFFFFF" />
+            ) : (
+              <Text style={styles.emoji}>{emoji}</Text>
+            )}
             <Text style={styles.placeholderLabel}>{category}</Text>
+          </View>
+        )}
+        {(videoCount > 0 || imageCount > 1) && (
+          <View style={styles.mediaBadges}>
+            {imageCount > 1 && (
+              <View style={styles.mediaBadge}>
+                <Ionicons name="images" size={12} color="#FFFFFF" />
+                <Text style={styles.mediaBadgeText}>{imageCount}</Text>
+              </View>
+            )}
+            {videoCount > 0 && (
+              <View style={styles.mediaBadge}>
+                <Ionicons name="videocam" size={12} color="#FFFFFF" />
+                <Text style={styles.mediaBadgeText}>{videoCount}</Text>
+              </View>
+            )}
           </View>
         )}
         {isOwnListing && (
@@ -198,6 +237,26 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#FF385C",
   },
+  mediaBadges: {
+    position: "absolute",
+    left: 10,
+    top: 10,
+    gap: 6,
+  },
+  mediaBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: "rgba(34,34,34,0.74)",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  mediaBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "700",
+  },
   info: {
     paddingHorizontal: 12,
     paddingTop: 10,
@@ -234,5 +293,3 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
 });
-
-

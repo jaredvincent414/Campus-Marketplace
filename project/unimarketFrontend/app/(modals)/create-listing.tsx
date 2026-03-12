@@ -2,17 +2,19 @@
 import React, { useState } from "react";
 import {
   View, Text, TextInput, Pressable, StyleSheet, ScrollView,
-  KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
+  KeyboardAvoidingView, Platform, Alert, ActivityIndicator, Image,
 } from "react-native";
 import { useRouter } from "expo-router";
 import * as Location from "expo-location";
+import * as ImagePicker from "expo-image-picker";
 import { useListings } from "../../src/contexts/ListingsContext";
 import { useUser } from "../../src/contexts/UserContext";
-import { createListing } from "../../src/services/api";
-import { LocationCoords } from "../../src/types";
+import { createListing, uploadListingMedia } from "../../src/services/api";
+import { LocationCoords, ListingMedia } from "../../src/types";
 import { Ionicons } from "@expo/vector-icons";
 
 const CATEGORIES = ["General", "Electronics", "Books", "Clothing", "Food", "Sports"];
+const MAX_MEDIA_ITEMS = 6;
 
 export default function CreateListingScreen() {
   const router = useRouter();
@@ -23,9 +25,11 @@ export default function CreateListingScreen() {
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("General");
+  const [mediaItems, setMediaItems] = useState<ListingMedia[]>([]);
   const [location, setLocation] = useState<LocationCoords | null>(null);
   const [locationLoading, setLocationLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadingType, setUploadingType] = useState<ListingMedia["type"] | null>(null);
 
   const handleGetLocation = async () => {
     try {
@@ -49,19 +53,85 @@ export default function CreateListingScreen() {
     if (!description.trim()) { Alert.alert("Required", "Please add a description"); return false; }
     const priceNum = parseFloat(price);
     if (isNaN(priceNum) || priceNum < 0) { Alert.alert("Invalid Price", "Please enter a valid price"); return false; }
+    const imageCount = mediaItems.filter((item) => item.type === "image").length;
+    if (imageCount === 0) {
+      Alert.alert("Photo required", "Add at least one photo of the item.");
+      return false;
+    }
     return true;
+  };
+
+  const addMediaItem = (item: ListingMedia) => {
+    if (mediaItems.length >= MAX_MEDIA_ITEMS) {
+      Alert.alert("Media limit reached", `You can add up to ${MAX_MEDIA_ITEMS} files.`);
+      return;
+    }
+    const duplicate = mediaItems.some((existing) => existing.url.toLowerCase() === item.url.toLowerCase());
+    if (duplicate) {
+      Alert.alert("Duplicate media", "That media file is already attached to this listing.");
+      return;
+    }
+    setMediaItems((prev) => [...prev, item]);
+  };
+
+  const removeMediaItem = (index: number) => {
+    setMediaItems((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handlePickMediaFromDevice = async (type: ListingMedia["type"]) => {
+    if (mediaItems.length >= MAX_MEDIA_ITEMS) {
+      Alert.alert("Media limit reached", `You can add up to ${MAX_MEDIA_ITEMS} files.`);
+      return;
+    }
+
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (permission.status !== "granted") {
+        Alert.alert("Permission Denied", "Media library access is needed to select photos.");
+        return;
+      }
+
+      const picked = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes:
+          type === "video"
+            ? ImagePicker.MediaTypeOptions.Videos
+            : ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: type === "image",
+        quality: 0.75,
+      });
+
+      if (picked.canceled || !picked.assets?.[0]?.uri) {
+        return;
+      }
+
+      const selectedImage = picked.assets[0];
+      setUploadingType(type);
+      const uploadedMedia = await uploadListingMedia(
+        selectedImage.uri,
+        selectedImage.mimeType || (type === "video" ? "video/mp4" : "image/jpeg"),
+        type
+      );
+      addMediaItem(uploadedMedia);
+    } catch (error) {
+      Alert.alert("Upload failed", error instanceof Error ? error.message : "Could not upload selected media.");
+    } finally {
+      setUploadingType(null);
+    }
   };
 
   const handleSubmit = async () => {
     if (!validateForm()) return;
     try {
       setSubmitting(true);
+      const primaryImageUrl = mediaItems.find((item) => item.type === "image")?.url;
       const newListing = await createListing({
         title: title.trim(),
         description: description.trim(),
         price: parseFloat(price),
         category: category || "General",
         userEmail: user?.email || "",
+        imageUrl: primaryImageUrl,
+        media: mediaItems,
       });
       addListing(newListing);
       Alert.alert("Listed!", "Your item is now live.", [{ text: "Done", onPress: () => router.back() }]);
@@ -71,6 +141,11 @@ export default function CreateListingScreen() {
       setSubmitting(false);
     }
   };
+
+  const mediaEntries = mediaItems.map((item, index) => ({ item, index }));
+  const imageEntries = mediaEntries.filter((entry) => entry.item.type === "image");
+  const videoEntries = mediaEntries.filter((entry) => entry.item.type === "video");
+  const videoCount = videoEntries.length;
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"}>
@@ -141,6 +216,97 @@ export default function CreateListingScreen() {
               </Pressable>
             ))}
           </ScrollView>
+        </View>
+
+        {/* Media */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Photos & Videos *</Text>
+          <View style={styles.devicePickerRow}>
+            <Pressable
+              style={[styles.devicePickerButton, uploadingType !== null && styles.devicePickerButtonDisabled]}
+              onPress={() => handlePickMediaFromDevice("image")}
+              disabled={uploadingType !== null}
+            >
+              {uploadingType === "image" ? (
+                <>
+                  <ActivityIndicator size="small" color="#FF385C" />
+                  <Text style={styles.devicePickerText}>Uploading...</Text>
+                </>
+              ) : (
+                <>
+                  <Ionicons name="images-outline" size={18} color="#FF385C" />
+                  <Text style={styles.devicePickerText}>Add photo</Text>
+                </>
+              )}
+            </Pressable>
+
+            <Pressable
+              style={[styles.devicePickerButton, uploadingType !== null && styles.devicePickerButtonDisabled]}
+              onPress={() => handlePickMediaFromDevice("video")}
+              disabled={uploadingType !== null}
+            >
+              {uploadingType === "video" ? (
+                <>
+                  <ActivityIndicator size="small" color="#FF385C" />
+                  <Text style={styles.devicePickerText}>Uploading...</Text>
+                </>
+              ) : (
+                <>
+                  <Ionicons name="videocam-outline" size={18} color="#FF385C" />
+                  <Text style={styles.devicePickerText}>Add video</Text>
+                </>
+              )}
+            </Pressable>
+          </View>
+
+          {imageEntries.length > 0 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.imageThumbRow}
+            >
+              {imageEntries.map(({ item, index }) => (
+                <View key={`${item.type}-${item.url}-${index}`} style={styles.imageThumbWrap}>
+                  <Image source={{ uri: item.url }} style={styles.imageThumb} resizeMode="cover" />
+                  <Pressable
+                    style={styles.thumbRemoveButton}
+                    onPress={() => removeMediaItem(index)}
+                  >
+                    <Ionicons name="close" size={13} color="#FFFFFF" />
+                  </Pressable>
+                </View>
+              ))}
+            </ScrollView>
+          ) : null}
+
+          {videoCount > 0 ? (
+            <Text style={styles.mediaVideoCount}>
+              {videoCount} {videoCount === 1 ? "video attached" : "videos attached"}
+            </Text>
+          ) : null}
+
+          {videoEntries.length > 0 ? (
+            <View style={styles.mediaList}>
+              {videoEntries.map(({ item, index }, order) => (
+                <View key={`${item.type}-${item.url}-${index}`} style={styles.mediaItem}>
+                  <Ionicons name="videocam-outline" size={16} color="#6A6A6A" />
+                  <Text style={styles.mediaItemText} numberOfLines={1}>
+                    Video {order + 1} attached
+                  </Text>
+                  <Pressable
+                    style={styles.mediaRemoveButton}
+                    onPress={() => removeMediaItem(index)}
+                  >
+                    <Ionicons name="close" size={14} color="#7A7A7A" />
+                  </Pressable>
+                </View>
+              ))}
+            </View>
+          ) : mediaItems.length === 0 ? (
+            <Text style={styles.mediaHelperText}>
+              Add up to {MAX_MEDIA_ITEMS} files from your device. At least one photo is required.
+            </Text>
+          ) : null}
         </View>
 
         {/* Location */}
@@ -256,6 +422,99 @@ const styles = StyleSheet.create({
   },
   chipText: { fontSize: 13, color: "#717171", fontWeight: "500" },
   chipTextActive: { color: "#FFFFFF" },
+  devicePickerButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderColor: "#FFD6DF",
+    backgroundColor: "#FFF5F7",
+    borderRadius: 12,
+    minHeight: 48,
+    marginBottom: 12,
+  },
+  devicePickerRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  devicePickerButtonDisabled: {
+    opacity: 0.7,
+  },
+  devicePickerText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#FF385C",
+  },
+  imageThumbRow: {
+    gap: 10,
+    paddingVertical: 12,
+  },
+  imageThumbWrap: {
+    width: 120,
+    height: 90,
+    borderRadius: 10,
+    overflow: "hidden",
+    position: "relative",
+    borderWidth: 1,
+    borderColor: "#EBEBEB",
+  },
+  imageThumb: {
+    width: "100%",
+    height: "100%",
+  },
+  thumbRemoveButton: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(0,0,0,0.6)",
+  },
+  mediaVideoCount: {
+    marginBottom: 8,
+    fontSize: 12,
+    color: "#666666",
+    fontWeight: "600",
+  },
+  mediaList: {
+    marginTop: 2,
+    gap: 8,
+  },
+  mediaItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#EBEBEB",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    backgroundColor: "#FFFFFF",
+  },
+  mediaItemText: {
+    flex: 1,
+    marginHorizontal: 8,
+    fontSize: 13,
+    color: "#555555",
+  },
+  mediaRemoveButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F3F3F3",
+  },
+  mediaHelperText: {
+    marginTop: 2,
+    fontSize: 12,
+    lineHeight: 18,
+    color: "#808080",
+  },
   locationButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -279,6 +538,3 @@ const styles = StyleSheet.create({
   submitButtonDisabled: { opacity: 0.6 },
   submitButtonText: { color: "#FFFFFF", fontSize: 17, fontWeight: "700" },
 });
-
-
-

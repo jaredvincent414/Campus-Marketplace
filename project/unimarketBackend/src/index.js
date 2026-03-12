@@ -1,6 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
+const fs = require("fs");
+const path = require("path");
 const connectDB = require("./config/db");
 const listingRoutes = require("./routes/listingRoutes");
 const userRoutes = require("./routes/userRoutes");
@@ -13,6 +15,10 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+const uploadsDir = path.join(__dirname, "../uploads");
+fs.mkdirSync(uploadsDir, { recursive: true });
+app.use("/uploads", express.static(uploadsDir));
 
 app.get("/", (req, res) => {
   res.send("API is running");
@@ -35,5 +41,4 @@ server.on("error", (err) => {
   console.error(err);
   process.exit(1);
 });
-
 

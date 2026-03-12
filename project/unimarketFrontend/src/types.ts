@@ -1,5 +1,12 @@
 // Type definitions for UniMarket app
 
+export type ListingMediaType = "image" | "video";
+
+export interface ListingMedia {
+  type: ListingMediaType;
+  url: string;
+}
+
 export interface Listing {
   _id: string;
   title: string;
@@ -8,6 +15,7 @@ export interface Listing {
   category: string;
   userEmail: string;
   imageUrl?: string;
+  media?: ListingMedia[];
   condition?: string;
   locationName?: string;
   sellerName?: string;
@@ -19,5 +27,4 @@ export interface LocationCoords {
   latitude: number;
   longitude: number;
 }
-
 

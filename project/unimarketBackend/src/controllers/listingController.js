@@ -6,6 +6,25 @@ const Listing = require("../models/Listing");
  */
 
 const normalizeEmail = (email = "") => String(email).trim().toLowerCase();
+const isHttpUrl = (value = "") => {
+    try {
+        const parsed = new URL(String(value).trim());
+        return parsed.protocol === "http:" || parsed.protocol === "https:";
+    } catch {
+        return false;
+    }
+};
+
+const sanitizeMedia = (media) => {
+    if (!Array.isArray(media)) return [];
+
+    return media
+        .map((item) => ({
+            type: item?.type === "video" ? "video" : "image",
+            url: String(item?.url || "").trim()
+        }))
+        .filter((item) => item.url && isHttpUrl(item.url));
+};
 
 // GET /api/listings (all listings)
 const getListings = async (req, res) => {
@@ -44,18 +63,45 @@ const getListingById = async (req, res) => {
 // POST /api/listings
 const createListing = async (req, res) => {
     try {
-        const { title, description, price, category, userEmail } = req.body;
+        const { title, description, price, category, userEmail, imageUrl, media } = req.body;
 
         if (!title || !description || price === undefined || !userEmail) {
             return res.status(400).json({ message: "title, description, price, and userEmail are required" });
         }
 
-        const listing = new Listing({ title, description, price, category, userEmail });
+        const normalizedMedia = sanitizeMedia(media);
+        const sanitizedImageUrl = isHttpUrl(imageUrl) ? String(imageUrl).trim() : "";
+        const imageFromMedia = normalizedMedia.find((item) => item.type === "image")?.url;
+        const primaryImageUrl = sanitizedImageUrl || imageFromMedia;
+        if (!primaryImageUrl) {
+            return res.status(400).json({ message: "At least one image is required" });
+        }
+
+        const listing = new Listing({
+            title,
+            description,
+            price,
+            category,
+            userEmail,
+            imageUrl: primaryImageUrl || undefined,
+            media: normalizedMedia
+        });
         const created = await listing.save();
         res.status(201).json(created);
     } catch (err) {
         res.status(500).json({ message: err.message || "Server error" });
     }
+};
+
+// POST /api/listings/upload
+const uploadListingMedia = (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ message: "Media file is required" });
+    }
+
+    const mediaUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+    const mediaType = String(req.file.mimetype || "").startsWith("video/") ? "video" : "image";
+    res.status(201).json({ url: mediaUrl, type: mediaType });
 };
 
 // POST /api/listings/:id/purchase
@@ -120,6 +166,7 @@ module.exports = {
     getListingsByUser,
     getListingById,
     createListing,
+    uploadListingMedia,
     purchaseListing,
     updateListing,
     deleteListing

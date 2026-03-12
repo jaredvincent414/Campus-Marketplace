@@ -1,8 +1,21 @@
 // API service for backend communication
-import { Listing } from "../types";
+import { Listing, ListingMedia, ListingMediaType } from "../types";
 
 const LAN_HOST = "172.20.144.29";
 export const BASE_URL = `http://${LAN_HOST}:5001`;
+const LOCAL_HOST_PATTERN = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i;
+
+export const normalizeMediaUrl = (rawUrl?: string | null): string | undefined => {
+  const url = String(rawUrl || "").trim();
+  if (!url) return undefined;
+  if (url.startsWith("/uploads/")) {
+    return `${BASE_URL}${url}`;
+  }
+  if (LOCAL_HOST_PATTERN.test(url)) {
+    return url.replace(LOCAL_HOST_PATTERN, BASE_URL);
+  }
+  return url;
+};
 
 /**
  * Fetches all listings from the backend
@@ -58,6 +71,8 @@ export const createListing = async (data: {
   price: number;
   category: string;
   userEmail: string;
+  imageUrl?: string;
+  media?: ListingMedia[];
 }): Promise<Listing> => {
   try {
     const response = await fetch(`${BASE_URL}/api/listings`, {
@@ -71,6 +86,54 @@ export const createListing = async (data: {
       throw new Error(`Failed to create listing: ${response.statusText}`);
     }
     return await response.json();
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Upload an image or video file and return a public media reference
+ */
+export const uploadListingMedia = async (
+  fileUri: string,
+  mimeType = "image/jpeg",
+  mediaTypeHint: ListingMediaType = "image"
+): Promise<ListingMedia> => {
+  try {
+    const filename = fileUri.split("/").pop() || `listing-${Date.now()}.jpg`;
+    const formData = new FormData();
+    formData.append("media", {
+      uri: fileUri,
+      type: mimeType,
+      name: filename,
+    } as any);
+
+    const response = await fetch(`${BASE_URL}/api/listings/upload`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      let message = `Failed to upload image: ${response.statusText}`;
+      try {
+        const data = await response.json();
+        if (data?.message) {
+          message = data.message;
+        }
+      } catch {
+        // fallback message above
+      }
+      throw new Error(message);
+    }
+
+    const data = await response.json();
+    if (!data?.url) {
+      throw new Error("Upload response did not include a media URL");
+    }
+    return {
+      type: data?.type === "video" ? "video" : mediaTypeHint,
+      url: data.url,
+    };
   } catch (error) {
     throw error;
   }
@@ -121,5 +184,3 @@ export const deleteListing = async (id: string): Promise<void> => {
     throw error;
   }
 };
-
-
