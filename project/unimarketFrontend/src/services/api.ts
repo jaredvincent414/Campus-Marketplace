@@ -1,10 +1,8 @@
 // API service for backend communication
 import { Listing } from "../types";
-import { Platform } from "react-native";
 
-const LAN_HOST = "172.20.144.29"; 
-const DEV_HOST = Platform.OS === "android" ? "10.0.2.2" : Platform.OS === "ios" ? "localhost" : LAN_HOST;
-export const BASE_URL = __DEV__ ? `http://${DEV_HOST}:5001` : "http://localhost:5001";
+const LAN_HOST = "172.20.144.29";
+export const BASE_URL = `http://${LAN_HOST}:5001`;
 
 /**
  * Fetches all listings from the backend
@@ -79,6 +77,36 @@ export const createListing = async (data: {
 };
 
 /**
+ * Purchase a listing by ID
+ */
+export const purchaseListing = async (id: string, buyerEmail: string): Promise<void> => {
+  try {
+    const response = await fetch(`${BASE_URL}/api/listings/${id}/purchase`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ buyerEmail }),
+    });
+
+    if (!response.ok) {
+      let message = `Failed to purchase listing: ${response.statusText}`;
+      try {
+        const data = await response.json();
+        if (data?.message) {
+          message = data.message;
+        }
+      } catch {
+        // fallback message above
+      }
+      throw new Error(message);
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
  * Delete a listing by ID
  */
 export const deleteListing = async (id: string): Promise<void> => {
@@ -93,6 +121,5 @@ export const deleteListing = async (id: string): Promise<void> => {
     throw error;
   }
 };
-
 
 

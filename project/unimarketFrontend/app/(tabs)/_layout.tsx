@@ -1,37 +1,53 @@
 // Tabs layout for main navigation
 import { Tabs } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerStyle: {
-          backgroundColor: "#2563eb",
+        headerShown: false,
+        tabBarActiveTintColor: "#FF385C",
+        tabBarInactiveTintColor: "#717171",
+        tabBarStyle: {
+          backgroundColor: "#FFFFFF",
+          borderTopColor: "#EBEBEB",
+          borderTopWidth: 1,
+          height: 60,
+          paddingBottom: 8,
+          paddingTop: 8,
         },
-        headerTintColor: "#fff",
-        tabBarActiveTintColor: "#2563eb",
-        tabBarInactiveTintColor: "#666",
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: "600",
+        },
       }}
     >
       <Tabs.Screen
         name="(market)/index"
         options={{
-          title: "Market",
-          tabBarLabel: "Market",
+          title: "Explore",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="search" size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="(my-listings)/index"
         options={{
           title: "My Listings",
-          tabBarLabel: "My Listings",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="heart-outline" size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="(profile)/index"
         options={{
           title: "Profile",
-          tabBarLabel: "Profile",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person-circle-outline" size={size} color={color} />
+          ),
         }}
       />
     </Tabs>

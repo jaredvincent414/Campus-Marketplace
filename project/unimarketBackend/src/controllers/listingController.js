@@ -5,6 +5,8 @@ const Listing = require("../models/Listing");
  * @param {*} res 
  */
 
+const normalizeEmail = (email = "") => String(email).trim().toLowerCase();
+
 // GET /api/listings (all listings)
 const getListings = async (req, res) => {
     try {
@@ -56,6 +58,30 @@ const createListing = async (req, res) => {
     }
 };
 
+// POST /api/listings/:id/purchase
+const purchaseListing = async (req, res) => {
+    try {
+        const { buyerEmail } = req.body;
+        if (!buyerEmail) {
+            return res.status(400).json({ message: "buyerEmail is required" });
+        }
+
+        const listing = await Listing.findById(req.params.id);
+        if (!listing) {
+            return res.status(404).json({ message: "Listing not found" });
+        }
+
+        if (normalizeEmail(listing.userEmail) === normalizeEmail(buyerEmail)) {
+            return res.status(403).json({ message: "You cannot buy your own listing" });
+        }
+
+        await listing.deleteOne();
+        res.json({ message: "Purchase successful" });
+    } catch (err) {
+        res.status(500).json({ message: err.message || "Server error" });
+    }
+};
+
 // PUT /api/listings/:id
 const updateListing = async (req, res) => {
     try {
@@ -89,5 +115,12 @@ const deleteListing = async (req, res) => {
     }
 };
 
-module.exports = {getListings,getListingsByUser,getListingById,createListing,updateListing,deleteListing};
-
+module.exports = {
+    getListings,
+    getListingsByUser,
+    getListingById,
+    createListing,
+    purchaseListing,
+    updateListing,
+    deleteListing
+};
