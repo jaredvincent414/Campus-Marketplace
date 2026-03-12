@@ -77,9 +77,12 @@ export default function ProfileScreen() {
         {
           text: "Log out",
           style: "destructive",
-          onPress: () => {
-            signOut();
-            router.replace("/(auth)");
+          onPress: async () => {
+            try {
+              await signOut();
+            } finally {
+              router.replace("/(auth)/sign-in");
+            }
           },
         },
       ]);
