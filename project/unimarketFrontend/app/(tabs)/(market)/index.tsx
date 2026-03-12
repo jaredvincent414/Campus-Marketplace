@@ -3,12 +3,14 @@ import React, { useState, useEffect } from "react";
 import {
   View, Text, StyleSheet, SafeAreaView, Modal, Pressable, Alert, ScrollView, Image, Linking, Dimensions,
 } from "react-native";
+import { useRouter } from "expo-router";
 import { useListings } from "../../../src/contexts/ListingsContext";
 import { useUser } from "../../../src/contexts/UserContext";
 import { SearchBar } from "../../../src/components/SearchBar";
 import { ListingList } from "../../../src/components/ListingList";
 import { normalizeMediaUrl, purchaseListing } from "../../../src/services/api";
 import { Listing } from "../../../src/types";
+import { useCreateOrOpenConversation } from "../../../src/hooks/useCreateOrOpenConversation";
 import { Ionicons } from "@expo/vector-icons";
 
 const CATEGORIES = ["All", "Electronics", "Books", "Clothing", "Food", "Sports", "General"];
@@ -27,8 +29,10 @@ const BRAND_COLOR = "#FF385C";
 const MODAL_IMAGE_WIDTH = Dimensions.get("window").width;
 
 export default function MarketScreen() {
+  const router = useRouter();
   const { listings, loadListings } = useListings();
   const { user } = useUser();
+  const { openConversation, isLoading: openingConversation } = useCreateOrOpenConversation();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
@@ -74,6 +78,30 @@ export default function MarketScreen() {
       );
     } catch (error) {
       Alert.alert("Error", error instanceof Error ? error.message : "Failed to complete purchase");
+    }
+  };
+
+  const handleMessageSeller = async () => {
+    if (!selectedListing) return;
+    if (!user?.email) {
+      Alert.alert("Profile required", "Please add your profile before messaging a seller.");
+      return;
+    }
+
+    if (selectedListing.userEmail.toLowerCase() === user.email.toLowerCase()) {
+      Alert.alert("Not allowed", "You cannot message yourself about your own listing.");
+      return;
+    }
+
+    try {
+      const conversation = await openConversation(selectedListing._id, user.email);
+      setSelectedListing(null);
+      router.push({
+        pathname: "/(tabs)/(messages)/[conversationId]",
+        params: { conversationId: conversation.id },
+      });
+    } catch (error) {
+      Alert.alert("Unable to open chat", error instanceof Error ? error.message : "Please try again.");
     }
   };
 
@@ -286,6 +314,24 @@ export default function MarketScreen() {
                   )}
 
                   <View style={styles.divider} />
+
+                  <Pressable
+                    style={[
+                      styles.messageButton,
+                      (selectedIsOwnListing || openingConversation) && styles.messageButtonDisabled,
+                    ]}
+                    onPress={handleMessageSeller}
+                    disabled={selectedIsOwnListing || openingConversation}
+                  >
+                    <Ionicons name="chatbubble-ellipses-outline" size={16} color="#FF385C" />
+                    <Text style={styles.messageButtonText}>
+                      {selectedIsOwnListing
+                        ? "You cannot message yourself"
+                        : openingConversation
+                          ? "Opening chat..."
+                          : "Message Seller"}
+                    </Text>
+                  </Pressable>
 
                   <Pressable
                     style={[styles.buyButton, selectedIsOwnListing && styles.buyButtonDisabled]}
@@ -568,6 +614,26 @@ const styles = StyleSheet.create({
   buyButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
+    fontWeight: "700",
+  },
+  messageButton: {
+    borderWidth: 1,
+    borderColor: "#FFD0DA",
+    backgroundColor: "#FFF5F8",
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 10,
+  },
+  messageButtonDisabled: {
+    opacity: 0.6,
+  },
+  messageButtonText: {
+    color: "#FF385C",
+    fontSize: 15,
     fontWeight: "700",
   },
 });

@@ -8,6 +8,8 @@ const {
   updateListing,
   deleteListing,
   purchaseListing,
+  markListingPending,
+  markListingSold,
 } = require("../controllers/listingController");
 const { upload } = require("../middleware/uploadMiddleware");
 
@@ -27,8 +29,9 @@ router.post("/upload", uploadSingleMedia, uploadListingMedia);
 router.get("/:id", getListingById);
 router.post("/", createListing);
 router.post("/:id/purchase", purchaseListing);
+router.post("/:id/mark-pending", markListingPending);
+router.post("/:id/mark-sold", markListingSold);
 router.put("/:id", updateListing);
 router.delete("/:id", deleteListing);
 
 module.exports = router;
-

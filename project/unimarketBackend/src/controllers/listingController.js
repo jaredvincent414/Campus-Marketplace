@@ -1,4 +1,5 @@
 const Listing = require("../models/Listing");
+const Conversation = require("../models/Conversation");
 /**
  * Applies the listing CRUD operations
  * @param {*} req 
@@ -26,10 +27,43 @@ const sanitizeMedia = (media) => {
         .filter((item) => item.url && isHttpUrl(item.url));
 };
 
+const syncListingStatusToConversations = async (req, listing) => {
+    await Conversation.updateMany(
+        { listingId: listing._id },
+        { $set: { "listingSnapshot.status": listing.status } }
+    );
+
+    const io = req.app.get("io");
+    if (!io) return;
+
+    const relatedConversations = await Conversation.find({ listingId: listing._id })
+        .select("buyerEmail sellerEmail")
+        .lean();
+    const recipients = Array.from(
+        new Set(
+            relatedConversations.flatMap((conversation) => [
+                normalizeEmail(conversation.buyerEmail),
+                normalizeEmail(conversation.sellerEmail),
+            ])
+        )
+    ).filter(Boolean);
+
+    recipients.forEach((email) => {
+        io.to(`user:${email}`).emit("inbox:refresh", {
+            listingId: String(listing._id),
+            status: listing.status,
+        });
+    });
+    io.emit("listing:status", {
+        listingId: String(listing._id),
+        status: listing.status,
+    });
+};
+
 // GET /api/listings (all listings)
 const getListings = async (req, res) => {
     try {
-        const listings = await Listing.find().sort({ createdAt: -1 });
+        const listings = await Listing.find({ status: { $in: ["available", "pending"] } }).sort({ createdAt: -1 });
         res.json(listings);
     } catch (err) {
         res.status(500).json({ message: err.message || "Server error" });
@@ -40,7 +74,10 @@ const getListings = async (req, res) => {
 const getListingsByUser = async (req, res) => {
     try {
         const { email } = req.params;  
-        const listings = await Listing.find({ userEmail: email }).sort({ createdAt: -1 });
+        const listings = await Listing.find({
+            userEmail: email,
+            status: { $ne: "deleted" },
+        }).sort({ createdAt: -1 });
         res.json(listings);
     } catch (err) {
         res.status(500).json({ message: err.message || "Server error" });
@@ -84,7 +121,8 @@ const createListing = async (req, res) => {
             category,
             userEmail,
             imageUrl: primaryImageUrl || undefined,
-            media: normalizedMedia
+            media: normalizedMedia,
+            status: "available",
         });
         const created = await listing.save();
         res.status(201).json(created);
@@ -121,8 +159,66 @@ const purchaseListing = async (req, res) => {
             return res.status(403).json({ message: "You cannot buy your own listing" });
         }
 
-        await listing.deleteOne();
+        if (listing.status === "sold") {
+            return res.status(400).json({ message: "This listing is already sold" });
+        }
+
+        listing.status = "sold";
+        await listing.save();
+        await syncListingStatusToConversations(req, listing);
         res.json({ message: "Purchase successful" });
+    } catch (err) {
+        res.status(500).json({ message: err.message || "Server error" });
+    }
+};
+
+// POST /api/listings/:id/mark-pending
+const markListingPending = async (req, res) => {
+    try {
+        const { userEmail } = req.body;
+        if (!userEmail) {
+            return res.status(400).json({ message: "userEmail is required" });
+        }
+
+        const listing = await Listing.findById(req.params.id);
+        if (!listing) {
+            return res.status(404).json({ message: "Listing not found" });
+        }
+
+        if (normalizeEmail(listing.userEmail) !== normalizeEmail(userEmail)) {
+            return res.status(403).json({ message: "Only the seller can update this listing" });
+        }
+
+        listing.status = "pending";
+        await listing.save();
+        await syncListingStatusToConversations(req, listing);
+        res.json(listing);
+    } catch (err) {
+        res.status(500).json({ message: err.message || "Server error" });
+    }
+};
+
+// POST /api/listings/:id/mark-sold
+const markListingSold = async (req, res) => {
+    try {
+        const { userEmail } = req.body;
+        if (!userEmail) {
+            return res.status(400).json({ message: "userEmail is required" });
+        }
+
+        const listing = await Listing.findById(req.params.id);
+        if (!listing) {
+            return res.status(404).json({ message: "Listing not found" });
+        }
+
+        if (normalizeEmail(listing.userEmail) !== normalizeEmail(userEmail)) {
+            return res.status(403).json({ message: "Only the seller can update this listing" });
+        }
+
+        listing.status = "sold";
+        await listing.save();
+        await syncListingStatusToConversations(req, listing);
+        res.json(listing);
     } catch (err) {
         res.status(500).json({ message: err.message || "Server error" });
     }
@@ -154,7 +250,9 @@ const deleteListing = async (req, res) => {
             return res.status(404).json({ message: "Listing not found" });
         }
 
-        await listing.deleteOne();
+        listing.status = "deleted";
+        await listing.save();
+        await syncListingStatusToConversations(req, listing);
         res.json({ message: "Listing deleted" });
     } catch (err) {
         res.status(500).json({ message: err.message || "Server error" });
@@ -168,6 +266,8 @@ module.exports = {
     createListing,
     uploadListingMedia,
     purchaseListing,
+    markListingPending,
+    markListingSold,
     updateListing,
     deleteListing
 };

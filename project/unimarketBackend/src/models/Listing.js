@@ -20,7 +20,12 @@ const listingSchema = new mongoose.Schema(
         category: { type: String, default: "General", trim: true },
         userEmail: { type: String, required: true, trim: true },
         imageUrl: { type: String, trim: true },
-        media: { type: [listingMediaSchema], default: [] }
+        media: { type: [listingMediaSchema], default: [] },
+        status: {
+            type: String,
+            enum: ["available", "pending", "sold", "deleted"],
+            default: "available"
+        }
     },
     { timestamps: true }
 );
