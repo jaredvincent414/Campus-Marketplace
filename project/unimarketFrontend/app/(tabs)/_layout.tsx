@@ -1,9 +1,12 @@
 // Tabs layout for main navigation
-import { Tabs } from "expo-router";
+import { Tabs, Redirect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, ActivityIndicator } from "react-native";
+import { useUser } from "../../src/contexts/UserContext";
 
 export default function TabsLayout() {
+  const { user, isHydrated } = useUser();
+
   const renderTabIcon = (
     name: keyof typeof Ionicons.glyphMap,
     color: string,
@@ -14,6 +17,18 @@ export default function TabsLayout() {
       <Ionicons name={name} size={size} color={color} />
     </View>
   );
+
+  if (!isHydrated) {
+    return (
+      <View style={styles.loadingWrap}>
+        <ActivityIndicator size="large" color="#2F54D7" />
+      </View>
+    );
+  }
+
+  if (!user) {
+    return <Redirect href="/(auth)" />;
+  }
 
   return (
     <Tabs
@@ -63,6 +78,15 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="(messages)"
+        options={{
+          title: "Messages",
+          tabBarIcon: ({ color, size, focused }) => (
+            renderTabIcon("chatbubble-ellipses-outline", color, size, focused)
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="(profile)/index"
         options={{
           title: "Profile",
@@ -86,6 +110,10 @@ const styles = StyleSheet.create({
   iconWrapFocused: {
     backgroundColor: "#FFF1F4",
   },
+  loadingWrap: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#EFF3FF",
+  },
 });
-
-

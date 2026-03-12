@@ -33,7 +33,7 @@ export const ListingsProvider = ({ children }: { children: ReactNode }) => {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to load listings";
       setError(errorMessage);
-      console.error("Error loading listings:", errorMessage);
+      console.warn("Error loading listings:", errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -49,7 +49,7 @@ export const ListingsProvider = ({ children }: { children: ReactNode }) => {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to load user listings";
       setError(errorMessage);
-      console.error("Error loading user listings:", errorMessage);
+      console.warn("Error loading user listings:", errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -88,6 +88,5 @@ export const useListings = (): ListingsContextType => {
   }
   return context;
 };
-
 
 

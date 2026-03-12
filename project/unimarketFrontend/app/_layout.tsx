@@ -7,11 +7,14 @@ export default function RootLayout() {
   return (
     <ListingsProvider>
       <UserProvider>
-        <Stack>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="(auth)" />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen
             name="(modals)/create-listing"
             options={{
+              headerShown: true,
               presentation: "modal",
               title: "Create Listing",
               headerStyle: {
@@ -25,6 +28,5 @@ export default function RootLayout() {
     </ListingsProvider>
   );
 }
-
 
 

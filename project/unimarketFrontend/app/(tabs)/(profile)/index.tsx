@@ -8,7 +8,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user } = useUser();
+  const { user, signOut } = useUser();
   const { userListings, loadUserListings, isLoading } = useListings();
 
   useEffect(() => {
@@ -71,7 +71,17 @@ export default function ProfileScreen() {
 
   const handleRowPress = (label: string) => {
     if (label === "Log out") {
-      Alert.alert("Coming soon", "Sign out flow can be added next.");
+      Alert.alert("Log out", "Are you sure you want to sign out?", [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Log out",
+          style: "destructive",
+          onPress: () => {
+            signOut();
+            router.replace("/(auth)");
+          },
+        },
+      ]);
       return;
     }
     Alert.alert("Coming soon", `${label} is not wired yet.`);
@@ -415,5 +425,4 @@ const styles = StyleSheet.create({
     marginLeft: 56,
   },
 });
-
 
