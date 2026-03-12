@@ -83,7 +83,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
             <Button
               title="Save"
               onPress={() => {
-                const u = { name: tempName.trim(), email: tempEmail.trim() } as User;
+                const u = { name: tempName.trim(), email: tempEmail.trim().toLowerCase() } as User;
                 if (u.name && u.email) saveUser(u);
               }}
             />

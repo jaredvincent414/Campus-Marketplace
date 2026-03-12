@@ -1,5 +1,5 @@
 // API service for backend communication
-import { Listing, ListingMedia, ListingMediaType } from "../types";
+import { Conversation, Listing, ListingMedia, ListingMediaType, Message } from "../types";
 
 const LAN_HOST = "172.20.144.29";
 export const BASE_URL = `http://${LAN_HOST}:5001`;
@@ -179,6 +179,240 @@ export const deleteListing = async (id: string): Promise<void> => {
     });
     if (!response.ok) {
       throw new Error(`Failed to delete listing: ${response.statusText}`);
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Mark listing as pending (seller action).
+ */
+export const markListingPending = async (listingId: string, userEmail: string): Promise<Listing> => {
+  try {
+    const response = await fetch(`${BASE_URL}/api/listings/${listingId}/mark-pending`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userEmail: userEmail.trim().toLowerCase(),
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to mark listing pending: ${response.statusText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Mark listing as sold (seller action).
+ */
+export const markListingSold = async (listingId: string, userEmail: string): Promise<Listing> => {
+  try {
+    const response = await fetch(`${BASE_URL}/api/listings/${listingId}/mark-sold`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userEmail: userEmail.trim().toLowerCase(),
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to mark listing sold: ${response.statusText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Fetch conversations for a given user.
+ */
+export const fetchConversations = async (userEmail: string): Promise<Conversation[]> => {
+  const normalizedEmail = userEmail.trim().toLowerCase();
+  if (!normalizedEmail) return [];
+
+  try {
+    const response = await fetch(
+      `${BASE_URL}/api/conversations?userEmail=${encodeURIComponent(normalizedEmail)}`
+    );
+    if (!response.ok) {
+      throw new Error(`Failed to fetch conversations: ${response.statusText}`);
+    }
+
+    const raw = await response.json();
+    return (Array.isArray(raw) ? raw : []).map((conversation) => ({
+      ...conversation,
+      listing: {
+        ...conversation.listing,
+        thumbnailUrl: normalizeMediaUrl(conversation?.listing?.thumbnailUrl) || "",
+      },
+    }));
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Create or open a listing-bound conversation.
+ */
+export const createOrOpenConversation = async (
+  listingId: string,
+  buyerEmail: string
+): Promise<Conversation> => {
+  try {
+    const response = await fetch(`${BASE_URL}/api/conversations`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        listingId,
+        buyerEmail: buyerEmail.trim().toLowerCase(),
+      }),
+    });
+
+    if (!response.ok) {
+      let message = `Failed to open conversation: ${response.statusText}`;
+      try {
+        const data = await response.json();
+        if (data?.message) {
+          message = data.message;
+        }
+      } catch {
+        // fallback message above
+      }
+      throw new Error(message);
+    }
+
+    const conversation = await response.json();
+    return {
+      ...conversation,
+      listing: {
+        ...conversation.listing,
+        thumbnailUrl: normalizeMediaUrl(conversation?.listing?.thumbnailUrl) || "",
+      },
+    };
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Fetch one conversation detail.
+ */
+export const fetchConversationById = async (
+  conversationId: string,
+  userEmail: string
+): Promise<Conversation> => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/api/conversations/${conversationId}?userEmail=${encodeURIComponent(
+        userEmail.trim().toLowerCase()
+      )}`
+    );
+    if (!response.ok) {
+      throw new Error(`Failed to fetch conversation: ${response.statusText}`);
+    }
+
+    const conversation = await response.json();
+    return {
+      ...conversation,
+      listing: {
+        ...conversation.listing,
+        thumbnailUrl: normalizeMediaUrl(conversation?.listing?.thumbnailUrl) || "",
+      },
+    };
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Fetch messages for a conversation.
+ */
+export const fetchConversationMessages = async (
+  conversationId: string,
+  userEmail: string
+): Promise<Message[]> => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/api/conversations/${conversationId}/messages?userEmail=${encodeURIComponent(
+        userEmail.trim().toLowerCase()
+      )}`
+    );
+    if (!response.ok) {
+      throw new Error(`Failed to fetch messages: ${response.statusText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Send a message inside a conversation.
+ */
+export const sendConversationMessage = async (
+  conversationId: string,
+  senderEmail: string,
+  body: string
+): Promise<Message> => {
+  try {
+    const response = await fetch(`${BASE_URL}/api/conversations/${conversationId}/messages`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        senderEmail: senderEmail.trim().toLowerCase(),
+        body: body.trim(),
+      }),
+    });
+
+    if (!response.ok) {
+      let message = `Failed to send message: ${response.statusText}`;
+      try {
+        const data = await response.json();
+        if (data?.message) {
+          message = data.message;
+        }
+      } catch {
+        // fallback message above
+      }
+      throw new Error(message);
+    }
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Mark a conversation as read for the current user.
+ */
+export const markConversationRead = async (
+  conversationId: string,
+  userEmail: string
+): Promise<void> => {
+  try {
+    const response = await fetch(`${BASE_URL}/api/conversations/${conversationId}/read`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userEmail: userEmail.trim().toLowerCase(),
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to mark conversation read: ${response.statusText}`);
     }
   } catch (error) {
     throw error;

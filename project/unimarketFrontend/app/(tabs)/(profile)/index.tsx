@@ -52,7 +52,7 @@ export default function ProfileScreen() {
       label: "Messages",
       subtitle: "Buyer chats",
       icon: "chatbubble-ellipses-outline",
-      onPress: () => Alert.alert("Coming soon", "Messages is coming soon."),
+      onPress: () => router.push("/(tabs)/(messages)"),
     },
   ] as const;
 
