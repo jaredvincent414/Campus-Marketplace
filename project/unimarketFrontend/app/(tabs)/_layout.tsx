@@ -2,14 +2,8 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { View, StyleSheet } from "react-native";
-import { useUser } from "../../src/contexts/UserContext";
-import { useConversations } from "../../src/hooks/useConversations";
-import { useUnreadCount } from "../../src/hooks/useUnreadCount";
 
 export default function TabsLayout() {
-  const { user } = useUser();
-  const { conversations } = useConversations(user?.email);
-  const unreadConversationCount = useUnreadCount(conversations);
   const renderTabIcon = (
     name: keyof typeof Ionicons.glyphMap,
     color: string,
@@ -69,16 +63,6 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="(messages)"
-        options={{
-          title: "Messages",
-          tabBarBadge: unreadConversationCount > 0 ? unreadConversationCount : undefined,
-          tabBarIcon: ({ color, size, focused }) => (
-            renderTabIcon("chatbubble-ellipses-outline", color, size, focused)
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="(profile)/index"
         options={{
           title: "Profile",
@@ -103,3 +87,5 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF1F4",
   },
 });
+
+
