@@ -1,9 +1,28 @@
 // API service for backend communication
+import Constants from "expo-constants";
+import { Platform } from "react-native";
 import { Conversation, Listing, ListingMedia, ListingMediaType, Message } from "../types";
 
-const LAN_HOST = "172.20.144.29";
-export const BASE_URL = `http://${LAN_HOST}:5001`;
+const API_PORT = "5001";
+const EXPO_HOST_URI = (Constants.expoConfig as { hostUri?: string } | null)?.hostUri;
+const EXPO_HOST = EXPO_HOST_URI ? EXPO_HOST_URI.split(":")[0] : null;
+const FALLBACK_HOST = Platform.OS === "android" ? "10.0.2.2" : "127.0.0.1";
+const RESOLVED_HOST = EXPO_HOST || FALLBACK_HOST;
+const OVERRIDE_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
+
+export const BASE_URL = OVERRIDE_BASE_URL || `http://${RESOLVED_HOST}:${API_PORT}`;
 const LOCAL_HOST_PATTERN = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i;
+
+const withNetworkHint = (error: unknown, action: string): Error => {
+  const message = error instanceof Error ? error.message : String(error || "");
+  if (/network request failed/i.test(message)) {
+    return new Error(
+      `${action} failed. Cannot reach backend at ${BASE_URL}. ` +
+      "Start the backend and make sure your phone/simulator can access that host."
+    );
+  }
+  return error instanceof Error ? error : new Error(`${action} failed`);
+};
 
 export const normalizeMediaUrl = (rawUrl?: string | null): string | undefined => {
   const url = String(rawUrl || "").trim();
@@ -28,7 +47,7 @@ export const fetchListings = async (): Promise<Listing[]> => {
     }
     return await response.json();
   } catch (error) {
-    throw error;
+    throw withNetworkHint(error, "Loading listings");
   }
 };
 
@@ -43,7 +62,7 @@ export const fetchListingsByUser = async (email: string): Promise<Listing[]> => 
     }
     return await response.json();
   } catch (error) {
-    throw error;
+    throw withNetworkHint(error, "Loading your listings");
   }
 };
 

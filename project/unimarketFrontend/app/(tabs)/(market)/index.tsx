@@ -12,20 +12,21 @@ import { normalizeMediaUrl, purchaseListing } from "../../../src/services/api";
 import { Listing } from "../../../src/types";
 import { useCreateOrOpenConversation } from "../../../src/hooks/useCreateOrOpenConversation";
 import { Ionicons } from "@expo/vector-icons";
+import { appColors } from "../../../src/theme/colors";
 
 const CATEGORIES = ["All", "Electronics", "Books", "Clothing", "Food", "Sports", "General"];
 
 const CATEGORY_COLORS: Record<string, string> = {
-  Books: "#FFD166",
-  Electronics: "#06D6A0",
-  Clothing: "#118AB2",
-  Food: "#FF6B6B",
-  Sports: "#8338EC",
-  General: "#E8927C",
+  Books: "#BFD0FF",
+  Electronics: "#A8D9F9",
+  Clothing: "#C5CBFF",
+  Food: "#F4C5B6",
+  Sports: "#C5BEFF",
+  General: "#D3DDFB",
 };
 
 const HORIZONTAL_PADDING = 20;
-const BRAND_COLOR = "#FF385C";
+const BRAND_COLOR = appColors.primary;
 const MODAL_IMAGE_WIDTH = Dimensions.get("window").width;
 
 export default function MarketScreen() {
@@ -220,7 +221,7 @@ export default function MarketScreen() {
           <View style={styles.modalContent}>
             {selectedListing && (
               <>
-                <View style={[styles.modalImage, { backgroundColor: CATEGORY_COLORS[selectedListing.category] ?? "#E8927C" }]}>
+                <View style={[styles.modalImage, { backgroundColor: CATEGORY_COLORS[selectedListing.category] ?? "#D3DDFB" }]}>
                   {selectedImageUrls.length > 0 ? (
                     <>
                       <ScrollView
@@ -262,7 +263,7 @@ export default function MarketScreen() {
                       style={styles.modalVideoBadge}
                       onPress={() => openMediaUrl(selectedVideos[0].url)}
                     >
-                      <Ionicons name="play" size={12} color="#FFFFFF" />
+                      <Ionicons name="play" size={12} color={appColors.textOnPrimary} />
                       <Text style={styles.modalVideoBadgeText}>
                         {selectedVideos.length} {selectedVideos.length === 1 ? "video" : "videos"}
                       </Text>
@@ -270,7 +271,7 @@ export default function MarketScreen() {
                   )}
 
                   <Pressable style={styles.closeButton} onPress={() => setSelectedListing(null)}>
-                    <Ionicons name="close" size={20} color="#222222" />
+                    <Ionicons name="close" size={20} color={appColors.textPrimary} />
                   </Pressable>
                 </View>
 
@@ -323,7 +324,7 @@ export default function MarketScreen() {
                     onPress={handleMessageSeller}
                     disabled={selectedIsOwnListing || openingConversation}
                   >
-                    <Ionicons name="chatbubble-ellipses-outline" size={16} color="#FF385C" />
+                    <Ionicons name="chatbubble-ellipses-outline" size={16} color={appColors.primary} />
                     <Text style={styles.messageButtonText}>
                       {selectedIsOwnListing
                         ? "You cannot message yourself"
@@ -355,7 +356,7 @@ export default function MarketScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FFFFFF" },
+  container: { flex: 1, backgroundColor: appColors.pageBackground },
   header: {
     paddingHorizontal: HORIZONTAL_PADDING,
     paddingTop: 12,
@@ -363,12 +364,12 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 31,
     fontWeight: "800",
-    color: "#222222",
+    color: appColors.textPrimary,
     letterSpacing: -0.6,
   },
   headerSubtitle: {
     fontSize: 13,
-    color: "#7A7A7A",
+    color: appColors.textSecondary,
     marginTop: 3,
   },
   searchContainer: {
@@ -389,8 +390,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#D8D8D8",
-    backgroundColor: "#FFFFFF",
+    borderColor: appColors.primaryBorderStrong,
+    backgroundColor: appColors.surface,
     marginRight: 10,
     justifyContent: "center",
   },
@@ -401,10 +402,10 @@ const styles = StyleSheet.create({
   categoryChipText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#676767",
+    color: appColors.textMuted,
   },
   categoryChipTextActive: {
-    color: "#FFFFFF",
+    color: appColors.textOnPrimary,
   },
   content: {
     flex: 1,
@@ -412,7 +413,7 @@ const styles = StyleSheet.create({
   },
   resultsCount: {
     fontSize: 13,
-    color: "#7A7A7A",
+    color: appColors.textMuted,
     marginBottom: 14,
     fontWeight: "600",
   },
@@ -420,20 +421,20 @@ const styles = StyleSheet.create({
     marginTop: 8,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#EFEFEF",
-    backgroundColor: "#FAFAFA",
+    borderColor: appColors.borderSoft,
+    backgroundColor: appColors.surfaceSoft,
     paddingVertical: 16,
     paddingHorizontal: 14,
   },
   discoveryTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#222222",
+    color: appColors.textPrimary,
     marginBottom: 6,
   },
   discoveryBody: {
     fontSize: 13,
-    color: "#727272",
+    color: appColors.textSecondary,
     lineHeight: 19,
   },
   discoveryButton: {
@@ -442,10 +443,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.surface,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#FFD6DF",
+    borderColor: appColors.primaryBorder,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
@@ -460,7 +461,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: "88%",
@@ -487,7 +488,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   modalImageFallbackText: {
-    color: "#FFFFFF",
+    color: appColors.textOnPrimary,
     fontSize: 13,
     fontWeight: "700",
   },
@@ -509,13 +510,13 @@ const styles = StyleSheet.create({
   },
   modalImageDotActive: {
     width: 16,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.textOnPrimary,
   },
   closeButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.surface,
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
@@ -539,7 +540,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   modalVideoBadgeText: {
-    color: "#FFFFFF",
+    color: appColors.textOnPrimary,
     fontSize: 12,
     fontWeight: "700",
   },
@@ -555,24 +556,24 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#222222",
+    color: appColors.textPrimary,
     flex: 1,
     marginRight: 12,
   },
   modalPrice: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#222222",
+    color: appColors.textPrimary,
   },
   divider: {
     height: 1,
-    backgroundColor: "#EBEBEB",
+    backgroundColor: appColors.divider,
     marginVertical: 16,
   },
   sectionLabel: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#717171",
+    color: appColors.textMuted,
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 6,
@@ -580,16 +581,16 @@ const styles = StyleSheet.create({
   },
   sectionValue: {
     fontSize: 15,
-    color: "#222222",
+    color: appColors.textPrimary,
     lineHeight: 22,
   },
   videoLinkRow: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#FFD6DF",
+    borderColor: appColors.primaryBorder,
     borderRadius: 10,
-    backgroundColor: "#FFF7F9",
+    backgroundColor: appColors.primarySoft,
     paddingHorizontal: 10,
     paddingVertical: 10,
     marginBottom: 8,
@@ -597,11 +598,11 @@ const styles = StyleSheet.create({
   },
   videoLinkText: {
     fontSize: 14,
-    color: "#FF385C",
+    color: appColors.primary,
     fontWeight: "600",
   },
   buyButton: {
-    backgroundColor: "#FF385C",
+    backgroundColor: appColors.primary,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: "center",
@@ -609,17 +610,17 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   buyButtonDisabled: {
-    backgroundColor: "#C5C5C5",
+    backgroundColor: appColors.primaryDisabled,
   },
   buyButtonText: {
-    color: "#FFFFFF",
+    color: appColors.textOnPrimary,
     fontSize: 16,
     fontWeight: "700",
   },
   messageButton: {
     borderWidth: 1,
-    borderColor: "#FFD0DA",
-    backgroundColor: "#FFF5F8",
+    borderColor: appColors.primaryBorder,
+    backgroundColor: appColors.primarySoft,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: "center",
@@ -632,7 +633,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   messageButtonText: {
-    color: "#FF385C",
+    color: appColors.primary,
     fontSize: 15,
     fontWeight: "700",
   },

@@ -8,6 +8,7 @@ import { useConversations } from "../../../src/hooks/useConversations";
 import { useUnreadCount } from "../../../src/hooks/useUnreadCount";
 import { ConversationRow } from "../../../src/components/messages/ConversationRow";
 import { EmptyInboxState } from "../../../src/components/messages/EmptyInboxState";
+import { appColors } from "../../../src/theme/colors";
 
 export default function MessagesInboxScreen() {
   const router = useRouter();
@@ -44,7 +45,7 @@ export default function MessagesInboxScreen() {
       <Text style={styles.errorTitle}>Could not load messages</Text>
       <Text style={styles.errorBody}>{error || "Please try again."}</Text>
       <Pressable style={styles.retryButton} onPress={refresh}>
-        <Ionicons name="refresh" size={16} color="#FFFFFF" />
+        <Ionicons name="refresh" size={16} color={appColors.textOnPrimary} />
         <Text style={styles.retryText}>Retry</Text>
       </Pressable>
     </View>
@@ -62,7 +63,7 @@ export default function MessagesInboxScreen() {
           </Text>
         </View>
         <View style={styles.headerIconWrap}>
-          <Ionicons name="chatbubbles-outline" size={20} color="#FF385C" />
+          <Ionicons name="chatbubbles-outline" size={20} color={appColors.primary} />
         </View>
       </View>
 
@@ -87,7 +88,7 @@ export default function MessagesInboxScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.pageBackground,
   },
   header: {
     paddingHorizontal: 20,
@@ -97,24 +98,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     borderBottomWidth: 1,
-    borderBottomColor: "#F1F1F1",
+    borderBottomColor: appColors.borderSoft,
+    backgroundColor: appColors.surface,
   },
   title: {
     fontSize: 30,
     fontWeight: "800",
-    color: "#222222",
+    color: appColors.textPrimary,
     letterSpacing: -0.6,
   },
   subtitle: {
     marginTop: 4,
     fontSize: 13,
-    color: "#717171",
+    color: appColors.textMuted,
   },
   headerIconWrap: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#FFF1F4",
+    backgroundColor: appColors.primarySoft,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -134,22 +136,22 @@ const styles = StyleSheet.create({
   },
   stateText: {
     fontSize: 15,
-    color: "#6A6A6A",
+    color: appColors.textMuted,
   },
   errorTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#222222",
+    color: appColors.textPrimary,
     marginBottom: 8,
   },
   errorBody: {
     fontSize: 14,
-    color: "#6A6A6A",
+    color: appColors.textMuted,
     textAlign: "center",
     marginBottom: 14,
   },
   retryButton: {
-    backgroundColor: "#FF385C",
+    backgroundColor: appColors.primary,
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
@@ -158,7 +160,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   retryText: {
-    color: "#FFFFFF",
+    color: appColors.textOnPrimary,
     fontSize: 13,
     fontWeight: "700",
   },

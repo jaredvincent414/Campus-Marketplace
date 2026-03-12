@@ -3,6 +3,7 @@ import React from "react";
 import { View, Text, FlatList, StyleSheet } from "react-native";
 import { Listing } from "../types";
 import { ListingCard } from "./ListingCard";
+import { appColors } from "../theme/colors";
 
 interface ListingListProps {
   data: Listing[];
@@ -87,14 +88,13 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#222222",
+    color: appColors.textPrimary,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: "#717171",
+    color: appColors.textMuted,
     textAlign: "center",
   },
 });
-
 

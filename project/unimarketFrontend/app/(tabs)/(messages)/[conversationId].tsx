@@ -26,6 +26,7 @@ import { useConversationMessages } from "../../../src/hooks/useConversationMessa
 import { ListingContextCard } from "../../../src/components/messages/ListingContextCard";
 import { MessageBubble } from "../../../src/components/messages/MessageBubble";
 import { MessageComposer } from "../../../src/components/messages/MessageComposer";
+import { appColors } from "../../../src/theme/colors";
 
 const formatMessageTime = (rawDate: string) => {
   const date = new Date(rawDate);
@@ -285,7 +286,7 @@ export default function ConversationScreen() {
       >
         <View style={styles.header}>
           <Pressable style={styles.headerButton} onPress={() => router.back()}>
-            <Ionicons name="chevron-back" size={22} color="#222222" />
+            <Ionicons name="chevron-back" size={22} color={appColors.textPrimary} />
           </Pressable>
           <View style={styles.headerCenter}>
             <Text style={styles.headerTitle} numberOfLines={1}>
@@ -296,7 +297,7 @@ export default function ConversationScreen() {
             </Text>
           </View>
           <Pressable style={styles.headerButton}>
-            <Ionicons name="ellipsis-horizontal" size={20} color="#696969" />
+            <Ionicons name="ellipsis-horizontal" size={20} color={appColors.textMuted} />
           </Pressable>
         </View>
 
@@ -422,7 +423,7 @@ export default function ConversationScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.pageBackground,
   },
   keyboardWrap: {
     flex: 1,
@@ -433,8 +434,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#F1F1F1",
-    backgroundColor: "#FFFFFF",
+    borderBottomColor: appColors.borderSoft,
+    backgroundColor: appColors.surface,
   },
   headerButton: {
     width: 40,
@@ -450,11 +451,11 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#222222",
+    color: appColors.textPrimary,
   },
   headerSubtitle: {
     fontSize: 12,
-    color: "#7A7A7A",
+    color: appColors.textMuted,
     marginTop: 1,
   },
   content: {
@@ -475,29 +476,29 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#EBEBEB",
-    backgroundColor: "#FAFAFA",
+    borderColor: appColors.borderSoft,
+    backgroundColor: appColors.surfaceSoft,
     paddingVertical: 9,
     alignItems: "center",
   },
   sellerActionButtonActive: {
-    borderColor: "#F6D4A9",
-    backgroundColor: "#FFF6E9",
+    borderColor: appColors.warningBorder,
+    backgroundColor: appColors.warningSoft,
   },
   sellerActionButtonActiveSold: {
-    borderColor: "#E3E3E3",
-    backgroundColor: "#F2F2F2",
+    borderColor: appColors.borderSoft,
+    backgroundColor: appColors.surfaceSoftAlt,
   },
   sellerActionText: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#3D3D3D",
+    color: appColors.textPrimary,
   },
   sellerActionTextActive: {
-    color: "#A86500",
+    color: appColors.warning,
   },
   sellerActionTextActiveSold: {
-    color: "#555555",
+    color: appColors.textMuted,
   },
   messagesWrap: {
     flex: 1,
@@ -515,30 +516,30 @@ const styles = StyleSheet.create({
   },
   centerStateText: {
     fontSize: 14,
-    color: "#6B6B6B",
+    color: appColors.textMuted,
     textAlign: "center",
   },
   errorTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#222222",
+    color: appColors.textPrimary,
     marginBottom: 8,
     textAlign: "center",
   },
   errorBody: {
     fontSize: 14,
-    color: "#6A6A6A",
+    color: appColors.textMuted,
     textAlign: "center",
     marginBottom: 14,
   },
   retryButton: {
     borderRadius: 999,
-    backgroundColor: "#FF385C",
+    backgroundColor: appColors.primary,
     paddingHorizontal: 16,
     paddingVertical: 9,
   },
   retryButtonText: {
-    color: "#FFFFFF",
+    color: appColors.textOnPrimary,
     fontWeight: "700",
     fontSize: 13,
   },
@@ -552,22 +553,22 @@ const styles = StyleSheet.create({
   quickReplyChip: {
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "#E9E9E9",
-    backgroundColor: "#FAFAFA",
+    borderColor: appColors.primaryBorder,
+    backgroundColor: appColors.primarySoft,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
   quickReplyText: {
     fontSize: 12,
-    color: "#616161",
+    color: appColors.textSecondary,
     fontWeight: "600",
   },
   composerWrap: {
     paddingHorizontal: 12,
     paddingTop: 4,
     paddingBottom: 10,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.surface,
     borderTopWidth: 1,
-    borderTopColor: "#F1F1F1",
+    borderTopColor: appColors.borderSoft,
   },
 });

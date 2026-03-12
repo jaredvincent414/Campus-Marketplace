@@ -1,9 +1,13 @@
 // Tabs layout for main navigation
-import { Tabs } from "expo-router";
+import { Tabs, Redirect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, ActivityIndicator } from "react-native";
+import { useUser } from "../../src/contexts/UserContext";
+import { appColors } from "../../src/theme/colors";
 
 export default function TabsLayout() {
+  const { user, isHydrated } = useUser();
+
   const renderTabIcon = (
     name: keyof typeof Ionicons.glyphMap,
     color: string,
@@ -15,15 +19,27 @@ export default function TabsLayout() {
     </View>
   );
 
+  if (!isHydrated) {
+    return (
+      <View style={styles.loadingWrap}>
+        <ActivityIndicator size="large" color={appColors.primary} />
+      </View>
+    );
+  }
+
+  if (!user) {
+    return <Redirect href="/(auth)" />;
+  }
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#FF385C",
-        tabBarInactiveTintColor: "#787878",
+        tabBarActiveTintColor: appColors.primary,
+        tabBarInactiveTintColor: appColors.textMuted,
         tabBarStyle: {
-          backgroundColor: "#FFFFFF",
-          borderTopColor: "#F0F0F0",
+          backgroundColor: appColors.surface,
+          borderTopColor: appColors.borderSoft,
           borderTopWidth: 1,
           height: 68,
           paddingBottom: 10,
@@ -63,6 +79,15 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="(messages)"
+        options={{
+          title: "Messages",
+          tabBarIcon: ({ color, size, focused }) => (
+            renderTabIcon("chatbubble-ellipses-outline", color, size, focused)
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="(profile)/index"
         options={{
           title: "Profile",
@@ -84,8 +109,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   iconWrapFocused: {
-    backgroundColor: "#FFF1F4",
+    backgroundColor: appColors.primarySoft,
+  },
+  loadingWrap: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: appColors.pageBackground,
   },
 });
-
-

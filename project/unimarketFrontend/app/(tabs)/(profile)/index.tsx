@@ -5,10 +5,11 @@ import { useRouter } from "expo-router";
 import { useUser } from "../../../src/contexts/UserContext";
 import { useListings } from "../../../src/contexts/ListingsContext";
 import { Ionicons } from "@expo/vector-icons";
+import { appColors } from "../../../src/theme/colors";
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user } = useUser();
+  const { user, signOut } = useUser();
   const { userListings, loadUserListings, isLoading } = useListings();
 
   useEffect(() => {
@@ -71,7 +72,17 @@ export default function ProfileScreen() {
 
   const handleRowPress = (label: string) => {
     if (label === "Log out") {
-      Alert.alert("Coming soon", "Sign out flow can be added next.");
+      Alert.alert("Log out", "Are you sure you want to sign out?", [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Log out",
+          style: "destructive",
+          onPress: () => {
+            signOut();
+            router.replace("/(auth)");
+          },
+        },
+      ]);
       return;
     }
     Alert.alert("Coming soon", `${label} is not wired yet.`);
@@ -85,10 +96,10 @@ export default function ProfileScreen() {
         <View key={row.key}>
           <Pressable style={styles.settingRow} onPress={() => handleRowPress(row.label)}>
             <View style={styles.settingIconWrap}>
-              <Ionicons name={row.icon} size={18} color="#4A4A4A" />
+              <Ionicons name={row.icon} size={18} color={appColors.textSecondary} />
             </View>
             <Text style={styles.settingLabel}>{row.label}</Text>
-            <Ionicons name="chevron-forward" size={18} color="#9A9A9A" />
+            <Ionicons name="chevron-forward" size={18} color={appColors.textPlaceholder} />
           </Pressable>
           {index < rows.length - 1 ? <View style={styles.rowDivider} /> : null}
         </View>
@@ -102,7 +113,7 @@ export default function ProfileScreen() {
         <View style={styles.headerRow}>
           <Text style={styles.pageTitle}>Profile</Text>
           <Pressable style={styles.headerActionButton} onPress={() => Alert.alert("Coming soon", "Notifications are coming soon.")}>
-            <Ionicons name="notifications-outline" size={20} color="#222222" />
+            <Ionicons name="notifications-outline" size={20} color={appColors.textPrimary} />
           </Pressable>
         </View>
 
@@ -118,7 +129,7 @@ export default function ProfileScreen() {
                 <Ionicons
                   name={isVerifiedStudent ? "checkmark-circle" : "school-outline"}
                   size={13}
-                  color={isVerifiedStudent ? "#086C3A" : "#5A5A5A"}
+                  color={isVerifiedStudent ? appColors.success : appColors.textMuted}
                 />
                 <Text style={[styles.statusBadgeText, isVerifiedStudent && styles.statusBadgeTextVerified]}>
                   {isVerifiedStudent ? "Verified Student" : "Campus Member"}
@@ -142,7 +153,7 @@ export default function ProfileScreen() {
           {quickActions.map((action) => (
             <Pressable key={action.key} style={styles.quickActionCard} onPress={action.onPress}>
               <View style={styles.quickActionIcon}>
-                <Ionicons name={action.icon} size={20} color="#1F1F1F" />
+                <Ionicons name={action.icon} size={20} color={appColors.primary} />
               </View>
               <Text style={styles.quickActionTitle}>{action.label}</Text>
               <Text style={styles.quickActionSubtitle}>{action.subtitle}</Text>
@@ -152,13 +163,13 @@ export default function ProfileScreen() {
 
         <Pressable style={styles.ctaCard} onPress={() => router.push("/(modals)/create-listing")}>
           <View style={styles.ctaIconWrap}>
-            <Ionicons name="rocket-outline" size={22} color="#FF385C" />
+            <Ionicons name="rocket-outline" size={22} color={appColors.primary} />
           </View>
           <View style={styles.ctaContent}>
             <Text style={styles.ctaTitle}>Start Selling</Text>
             <Text style={styles.ctaBody}>Post a listing and reach buyers across campus.</Text>
           </View>
-          <Ionicons name="arrow-forward" size={18} color="#FF385C" />
+          <Ionicons name="arrow-forward" size={18} color={appColors.primary} />
         </Pressable>
 
         <Text style={styles.sectionLabel}>Account</Text>
@@ -172,7 +183,7 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8F8F8" },
+  container: { flex: 1, backgroundColor: appColors.pageBackground },
   content: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 44 },
   headerRow: {
     flexDirection: "row",
@@ -183,27 +194,27 @@ const styles = StyleSheet.create({
   pageTitle: {
     fontSize: 32,
     fontWeight: "800",
-    color: "#222222",
+    color: appColors.textPrimary,
     letterSpacing: -0.6,
   },
   headerActionButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.surface,
     borderWidth: 1,
-    borderColor: "#ECECEC",
+    borderColor: appColors.borderSoft,
     alignItems: "center",
     justifyContent: "center",
   },
   summaryCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.surface,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 14,
     borderWidth: 1,
-    borderColor: "#EDEDED",
+    borderColor: appColors.borderSoft,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06,
@@ -220,7 +231,7 @@ const styles = StyleSheet.create({
     width: 84,
     height: 84,
     borderRadius: 42,
-    backgroundColor: "#FF385C",
+    backgroundColor: appColors.primary,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 14,
@@ -228,7 +239,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 30,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: appColors.textOnPrimary,
   },
   identityBlock: {
     flex: 1,
@@ -236,12 +247,12 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#222222",
+    color: appColors.textPrimary,
     marginBottom: 2,
   },
   userSecondary: {
     fontSize: 14,
-    color: "#717171",
+    color: appColors.textMuted,
     marginBottom: 8,
   },
   statusBadge: {
@@ -250,28 +261,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     borderRadius: 999,
-    backgroundColor: "#F0F0F0",
+    backgroundColor: appColors.surfaceSoftAlt,
     borderWidth: 1,
-    borderColor: "#E6E6E6",
+    borderColor: appColors.borderSoft,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
   statusBadgeVerified: {
-    backgroundColor: "#E8F8EE",
-    borderColor: "#CDEFD9",
+    backgroundColor: appColors.successSoft,
+    borderColor: appColors.successBorder,
   },
   statusBadgeText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#5A5A5A",
+    color: appColors.textMuted,
   },
   statusBadgeTextVerified: {
-    color: "#086C3A",
+    color: appColors.success,
   },
   statsRow: {
     flexDirection: "row",
     borderTopWidth: 1,
-    borderTopColor: "#F0F0F0",
+    borderTopColor: appColors.borderSoft,
     paddingTop: 12,
   },
   statItem: {
@@ -282,13 +293,13 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 17,
     fontWeight: "700",
-    color: "#222222",
+    color: appColors.textPrimary,
     marginBottom: 2,
   },
   statLabel: {
     fontSize: 11,
     fontWeight: "600",
-    color: "#7A7A7A",
+    color: appColors.textMuted,
     textTransform: "uppercase",
     letterSpacing: 0.4,
   },
@@ -299,7 +310,7 @@ const styles = StyleSheet.create({
     height: 1,
     width: 20,
     transform: [{ rotate: "90deg" }],
-    backgroundColor: "#E9E9E9",
+    backgroundColor: appColors.borderSoft,
   },
   quickActionsGrid: {
     flexDirection: "row",
@@ -310,10 +321,10 @@ const styles = StyleSheet.create({
   quickActionCard: {
     flex: 1,
     minHeight: 118,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.surface,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#ECECEC",
+    borderColor: appColors.borderSoft,
     paddingHorizontal: 12,
     paddingVertical: 12,
   },
@@ -321,7 +332,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: appColors.primarySoft,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 10,
@@ -329,19 +340,19 @@ const styles = StyleSheet.create({
   quickActionTitle: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#222222",
+    color: appColors.textPrimary,
     marginBottom: 4,
   },
   quickActionSubtitle: {
     fontSize: 12,
-    color: "#717171",
+    color: appColors.textMuted,
     lineHeight: 17,
   },
   ctaCard: {
-    backgroundColor: "#FFF8FA",
+    backgroundColor: appColors.surfaceSoft,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#FFD6DF",
+    borderColor: appColors.primaryBorder,
     paddingHorizontal: 14,
     paddingVertical: 14,
     flexDirection: "row",
@@ -352,7 +363,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 12,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.surface,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
@@ -363,28 +374,28 @@ const styles = StyleSheet.create({
   ctaTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#222222",
+    color: appColors.textPrimary,
     marginBottom: 2,
   },
   ctaBody: {
     fontSize: 13,
-    color: "#6F6F6F",
+    color: appColors.textMuted,
     lineHeight: 18,
   },
   sectionLabel: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#6E6E6E",
+    color: appColors.textMuted,
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 8,
     marginLeft: 2,
   },
   settingsCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.surface,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#ECECEC",
+    borderColor: appColors.borderSoft,
     marginBottom: 18,
     overflow: "hidden",
   },
@@ -399,21 +410,19 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: appColors.primarySoft,
     alignItems: "center",
     justifyContent: "center",
   },
   settingLabel: {
     flex: 1,
     fontSize: 15,
-    color: "#232323",
+    color: appColors.textPrimary,
     fontWeight: "500",
   },
   rowDivider: {
     height: 1,
-    backgroundColor: "#F0F0F0",
+    backgroundColor: appColors.borderSoft,
     marginLeft: 56,
   },
 });
-
-

@@ -1,6 +1,7 @@
 import React from "react";
 import { View, TextInput, Pressable, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { appColors } from "../../theme/colors";
 
 interface MessageComposerProps {
   value: string;
@@ -22,7 +23,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
       <TextInput
         style={styles.input}
         placeholder="Type a message..."
-        placeholderTextColor="#A2A2A2"
+        placeholderTextColor={appColors.textPlaceholder}
         value={value}
         onChangeText={onChangeText}
         multiline
@@ -33,7 +34,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
         onPress={onSend}
         disabled={!canSend}
       >
-        <Ionicons name="send" size={16} color="#FFFFFF" />
+        <Ionicons name="send" size={16} color={appColors.textOnPrimary} />
       </Pressable>
     </View>
   );
@@ -44,11 +45,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-end",
     borderWidth: 1,
-    borderColor: "#E8E8E8",
+    borderColor: appColors.borderSoft,
     borderRadius: 18,
     paddingVertical: 8,
     paddingHorizontal: 10,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.surface,
     gap: 8,
   },
   input: {
@@ -56,7 +57,7 @@ const styles = StyleSheet.create({
     minHeight: 24,
     maxHeight: 110,
     fontSize: 15,
-    color: "#222222",
+    color: appColors.textPrimary,
     paddingVertical: 4,
     paddingHorizontal: 2,
   },
@@ -64,11 +65,11 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: "#FF385C",
+    backgroundColor: appColors.primary,
     justifyContent: "center",
     alignItems: "center",
   },
   sendButtonDisabled: {
-    backgroundColor: "#D2D2D2",
+    backgroundColor: appColors.primaryDisabled,
   },
 });

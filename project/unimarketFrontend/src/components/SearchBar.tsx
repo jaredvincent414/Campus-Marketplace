@@ -2,6 +2,7 @@
 import React from "react";
 import { View, TextInput, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { appColors } from "../theme/colors";
 
 interface SearchBarProps {
   value: string;
@@ -18,11 +19,11 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 }) => {
   return (
     <View style={styles.container}>
-      <Ionicons name="search" size={18} color="#8A8A8A" style={styles.icon} />
+      <Ionicons name="search" size={18} color={appColors.textMuted} style={styles.icon} />
       <TextInput
         style={styles.input}
         placeholder="Search items..."
-        placeholderTextColor="#717171"
+        placeholderTextColor={appColors.textPlaceholder}
         value={value}
         onChangeText={onChangeText}
       />
@@ -37,7 +38,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         <Ionicons
           name="options-outline"
           size={16}
-          color={hasActiveFilters ? "#FF385C" : "#6E6E6E"}
+          color={hasActiveFilters ? appColors.primary : appColors.textMuted}
         />
       </Pressable>
     </View>
@@ -50,7 +51,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.surface,
     borderRadius: RADIUS,
     minHeight: 54,
     paddingHorizontal: 14,
@@ -60,7 +61,7 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 2,
     borderWidth: 1,
-    borderColor: "#E7E7E7",
+    borderColor: appColors.borderSoft,
   },
   icon: {
     marginRight: 10,
@@ -68,7 +69,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 15,
-    color: "#222222",
+    color: appColors.textPrimary,
     fontWeight: "500",
     paddingVertical: 12,
   },
@@ -78,17 +79,16 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F7F7F7",
+    backgroundColor: appColors.surfaceMuted,
     borderWidth: 1,
-    borderColor: "#EEEEEE",
+    borderColor: appColors.borderSoft,
   },
   filterButtonActive: {
-    backgroundColor: "#FFF2F5",
-    borderColor: "#FFD6DF",
+    backgroundColor: appColors.primarySoft,
+    borderColor: appColors.primaryBorder,
   },
   filterButtonPressed: {
     opacity: 0.85,
   },
 });
-
 

@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { MessageDeliveryStatus } from "../../types";
+import { appColors } from "../../theme/colors";
 
 interface MessageBubbleProps {
   body: string;
@@ -54,11 +55,11 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
   },
   bubbleMine: {
-    backgroundColor: "#FF385C",
+    backgroundColor: appColors.primary,
     borderBottomRightRadius: 6,
   },
   bubbleOther: {
-    backgroundColor: "#F1F1F1",
+    backgroundColor: appColors.surfaceSoft,
     borderBottomLeftRadius: 6,
   },
   body: {
@@ -66,10 +67,10 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   bodyMine: {
-    color: "#FFFFFF",
+    color: appColors.textOnPrimary,
   },
   bodyOther: {
-    color: "#222222",
+    color: appColors.textPrimary,
   },
   metaRow: {
     flexDirection: "row",
@@ -85,11 +86,11 @@ const styles = StyleSheet.create({
   },
   timestamp: {
     fontSize: 11,
-    color: "#8A8A8A",
+    color: appColors.textPlaceholder,
   },
   retry: {
     fontSize: 11,
-    color: "#D62839",
+    color: appColors.danger,
     fontWeight: "700",
   },
 });

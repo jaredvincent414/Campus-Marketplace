@@ -1,11 +1,12 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { appColors } from "../../theme/colors";
 
 export const EmptyInboxState: React.FC = () => (
   <View style={styles.container}>
     <View style={styles.iconWrap}>
-      <Ionicons name="chatbubble-ellipses-outline" size={26} color="#FF385C" />
+      <Ionicons name="chatbubble-ellipses-outline" size={26} color={appColors.primary} />
     </View>
     <Text style={styles.title}>No messages yet</Text>
     <Text style={styles.subtitle}>
@@ -25,7 +26,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: "#FFF1F4",
+    backgroundColor: appColors.primarySoft,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 14,
@@ -33,12 +34,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#222222",
+    color: appColors.textPrimary,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 14,
-    color: "#717171",
+    color: appColors.textMuted,
     textAlign: "center",
     lineHeight: 20,
   },

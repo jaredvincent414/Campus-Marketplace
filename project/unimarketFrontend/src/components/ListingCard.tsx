@@ -4,17 +4,18 @@ import { View, Text, Pressable, StyleSheet, Alert, Image } from "react-native";
 import { Listing } from "../types";
 import { deleteListing, normalizeMediaUrl } from "../services/api";
 import { Ionicons } from "@expo/vector-icons";
+import { appColors } from "../theme/colors";
 
 const CARD_RADIUS = 16;
 const MEDIA_RADIUS = 14;
 
 const CATEGORY_COLORS: Record<string, string> = {
-  Books: "#F9D88A",
-  Electronics: "#8EDFD0",
-  Clothing: "#9DC7EA",
-  Food: "#F9A0A0",
-  Sports: "#B9A7F2",
-  General: "#E9C4BA",
+  Books: "#BFD0FF",
+  Electronics: "#A8D9F9",
+  Clothing: "#C5CBFF",
+  Food: "#F4C5B6",
+  Sports: "#C5BEFF",
+  General: "#D3DDFB",
 };
 
 const CATEGORY_EMOJIS: Record<string, string> = {
@@ -43,7 +44,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
 }) => {
   const isOwnListing = userEmail && userEmail === listing.userEmail;
   const category = listing.category || "General";
-  const placeholderColor = CATEGORY_COLORS[category] ?? "#E8927C";
+  const placeholderColor = CATEGORY_COLORS[category] ?? "#D3DDFB";
   const emoji = CATEGORY_EMOJIS[category] ?? "🛍️";
   const metadataLine = [listing.condition, listing.locationName].filter(Boolean).join(" • ");
   const media = listing.media || [];
@@ -107,7 +108,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
             <View style={styles.placeholderBlobOne} />
             <View style={styles.placeholderBlobTwo} />
             {videoCount > 0 ? (
-              <Ionicons name="play-circle" size={44} color="#FFFFFF" />
+              <Ionicons name="play-circle" size={44} color={appColors.textOnPrimary} />
             ) : (
               <Text style={styles.emoji}>{emoji}</Text>
             )}
@@ -118,13 +119,13 @@ export const ListingCard: React.FC<ListingCardProps> = ({
           <View style={styles.mediaBadges}>
             {imageCount > 1 && (
               <View style={styles.mediaBadge}>
-                <Ionicons name="images" size={12} color="#FFFFFF" />
+                <Ionicons name="images" size={12} color={appColors.textOnPrimary} />
                 <Text style={styles.mediaBadgeText}>{imageCount}</Text>
               </View>
             )}
             {videoCount > 0 && (
               <View style={styles.mediaBadge}>
-                <Ionicons name="videocam" size={12} color="#FFFFFF" />
+                <Ionicons name="videocam" size={12} color={appColors.textOnPrimary} />
                 <Text style={styles.mediaBadgeText}>{videoCount}</Text>
               </View>
             )}
@@ -154,9 +155,9 @@ const styles = StyleSheet.create({
   card: {
     width: "100%",
     borderRadius: CARD_RADIUS,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.surface,
     borderWidth: 1,
-    borderColor: "#ECECEC",
+    borderColor: appColors.borderSoft,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
@@ -219,7 +220,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontSize: 12,
     fontWeight: "700",
-    color: "rgba(34,34,34,0.8)",
+    color: "rgba(26,29,44,0.82)",
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
@@ -235,7 +236,7 @@ const styles = StyleSheet.create({
   ownerBadgeText: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#FF385C",
+    color: appColors.primary,
   },
   mediaBadges: {
     position: "absolute",
@@ -253,7 +254,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   mediaBadgeText: {
-    color: "#FFFFFF",
+    color: appColors.textOnPrimary,
     fontSize: 11,
     fontWeight: "700",
   },
@@ -265,7 +266,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#222222",
+    color: appColors.textPrimary,
     marginBottom: 4,
     lineHeight: 20,
   },
@@ -275,18 +276,18 @@ const styles = StyleSheet.create({
   },
   category: {
     fontSize: 12,
-    color: "#6B6B6B",
+    color: appColors.textMuted,
     marginBottom: 2,
     fontWeight: "500",
   },
   metadata: {
     fontSize: 12,
-    color: "#8A8A8A",
+    color: appColors.textPlaceholder,
     marginBottom: 6,
   },
   price: {
     fontSize: 14,
-    color: "#222222",
+    color: appColors.textPrimary,
   },
   priceAmount: {
     fontWeight: "800",
