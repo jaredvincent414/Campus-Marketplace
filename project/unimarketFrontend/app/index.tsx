@@ -2,6 +2,7 @@ import React from "react";
 import { ActivityIndicator, View, StyleSheet } from "react-native";
 import { Redirect } from "expo-router";
 import { useUser } from "../src/contexts/UserContext";
+import { appColors } from "../src/theme/colors";
 
 export default function IndexRoute() {
   const { user, isHydrated } = useUser();
@@ -9,7 +10,7 @@ export default function IndexRoute() {
   if (!isHydrated) {
     return (
       <View style={styles.loadingWrap}>
-        <ActivityIndicator size="large" color="#2F54D7" />
+        <ActivityIndicator size="large" color={appColors.primary} />
       </View>
     );
   }
@@ -26,6 +27,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#EFF3FF",
+    backgroundColor: appColors.pageBackground,
   },
 });

@@ -12,6 +12,7 @@ import { useUser } from "../../src/contexts/UserContext";
 import { createListing, uploadListingMedia } from "../../src/services/api";
 import { LocationCoords, ListingMedia } from "../../src/types";
 import { Ionicons } from "@expo/vector-icons";
+import { appColors } from "../../src/theme/colors";
 
 const CATEGORIES = ["General", "Electronics", "Books", "Clothing", "Food", "Sports"];
 const MAX_MEDIA_ITEMS = 6;
@@ -152,7 +153,7 @@ export default function CreateListingScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="close" size={24} color="#222222" />
+          <Ionicons name="close" size={24} color={appColors.textPrimary} />
         </Pressable>
         <Text style={styles.headerTitle}>New Listing</Text>
         <View style={{ width: 44 }} />
@@ -167,7 +168,7 @@ export default function CreateListingScreen() {
             value={title}
             onChangeText={setTitle}
             placeholder="What are you selling?"
-            placeholderTextColor="#AAAAAA"
+            placeholderTextColor={appColors.textPlaceholder}
           />
         </View>
 
@@ -179,7 +180,7 @@ export default function CreateListingScreen() {
             value={description}
             onChangeText={setDescription}
             placeholder="Describe your item..."
-            placeholderTextColor="#AAAAAA"
+            placeholderTextColor={appColors.textPlaceholder}
             multiline
             numberOfLines={4}
             textAlignVertical="top"
@@ -196,7 +197,7 @@ export default function CreateListingScreen() {
               value={price}
               onChangeText={setPrice}
               placeholder="0.00"
-              placeholderTextColor="#AAAAAA"
+              placeholderTextColor={appColors.textPlaceholder}
               keyboardType="decimal-pad"
             />
           </View>
@@ -229,12 +230,12 @@ export default function CreateListingScreen() {
             >
               {uploadingType === "image" ? (
                 <>
-                  <ActivityIndicator size="small" color="#FF385C" />
+                  <ActivityIndicator size="small" color={appColors.primary} />
                   <Text style={styles.devicePickerText}>Uploading...</Text>
                 </>
               ) : (
                 <>
-                  <Ionicons name="images-outline" size={18} color="#FF385C" />
+                  <Ionicons name="images-outline" size={18} color={appColors.primary} />
                   <Text style={styles.devicePickerText}>Add photo</Text>
                 </>
               )}
@@ -247,12 +248,12 @@ export default function CreateListingScreen() {
             >
               {uploadingType === "video" ? (
                 <>
-                  <ActivityIndicator size="small" color="#FF385C" />
+                  <ActivityIndicator size="small" color={appColors.primary} />
                   <Text style={styles.devicePickerText}>Uploading...</Text>
                 </>
               ) : (
                 <>
-                  <Ionicons name="videocam-outline" size={18} color="#FF385C" />
+                  <Ionicons name="videocam-outline" size={18} color={appColors.primary} />
                   <Text style={styles.devicePickerText}>Add video</Text>
                 </>
               )}
@@ -272,7 +273,7 @@ export default function CreateListingScreen() {
                     style={styles.thumbRemoveButton}
                     onPress={() => removeMediaItem(index)}
                   >
-                    <Ionicons name="close" size={13} color="#FFFFFF" />
+                    <Ionicons name="close" size={13} color={appColors.textOnPrimary} />
                   </Pressable>
                 </View>
               ))}
@@ -289,7 +290,7 @@ export default function CreateListingScreen() {
             <View style={styles.mediaList}>
               {videoEntries.map(({ item, index }, order) => (
                 <View key={`${item.type}-${item.url}-${index}`} style={styles.mediaItem}>
-                  <Ionicons name="videocam-outline" size={16} color="#6A6A6A" />
+                  <Ionicons name="videocam-outline" size={16} color={appColors.textMuted} />
                   <Text style={styles.mediaItemText} numberOfLines={1}>
                     Video {order + 1} attached
                   </Text>
@@ -297,7 +298,7 @@ export default function CreateListingScreen() {
                     style={styles.mediaRemoveButton}
                     onPress={() => removeMediaItem(index)}
                   >
-                    <Ionicons name="close" size={14} color="#7A7A7A" />
+                    <Ionicons name="close" size={14} color={appColors.textMuted} />
                   </Pressable>
                 </View>
               ))}
@@ -314,10 +315,10 @@ export default function CreateListingScreen() {
           <Text style={styles.label}>Location (optional)</Text>
           <Pressable style={styles.locationButton} onPress={handleGetLocation} disabled={locationLoading}>
             {locationLoading ? (
-              <ActivityIndicator size="small" color="#FF385C" />
+              <ActivityIndicator size="small" color={appColors.primary} />
             ) : (
               <>
-                <Ionicons name={location ? "location" : "location-outline"} size={18} color={location ? "#FF385C" : "#717171"} />
+                <Ionicons name={location ? "location" : "location-outline"} size={18} color={location ? appColors.primary : appColors.textMuted} />
                 <Text style={[styles.locationButtonText, location && styles.locationButtonTextActive]}>
                   {location ? `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}` : "Use my location"}
                 </Text>
@@ -333,7 +334,7 @@ export default function CreateListingScreen() {
           disabled={submitting}
         >
           {submitting ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
+            <ActivityIndicator size="small" color={appColors.textOnPrimary} />
           ) : (
             <Text style={styles.submitButtonText}>Publish listing</Text>
           )}
@@ -344,7 +345,7 @@ export default function CreateListingScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FFFFFF" },
+  container: { flex: 1, backgroundColor: appColors.pageBackground },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -352,7 +353,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "#EBEBEB",
+    borderBottomColor: appColors.borderSoft,
+    backgroundColor: appColors.surface,
   },
   backButton: {
     width: 44,
@@ -363,48 +365,48 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: "700",
-    color: "#222222",
+    color: appColors.textPrimary,
   },
   scrollContent: { padding: 20, paddingBottom: 48 },
   inputGroup: { marginBottom: 24 },
   label: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#222222",
+    color: appColors.textPrimary,
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 10,
   },
   input: {
-    backgroundColor: "#F7F7F7",
+    backgroundColor: appColors.surfaceMuted,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: "#222222",
+    color: appColors.textPrimary,
     borderWidth: 1,
-    borderColor: "#EBEBEB",
+    borderColor: appColors.borderSoft,
   },
   textArea: { minHeight: 110, paddingTop: 14 },
   priceInputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F7F7F7",
+    backgroundColor: appColors.surfaceMuted,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#EBEBEB",
+    borderColor: appColors.borderSoft,
     paddingHorizontal: 16,
   },
   currencySymbol: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#222222",
+    color: appColors.textPrimary,
     marginRight: 4,
   },
   priceInput: {
     flex: 1,
     fontSize: 16,
-    color: "#222222",
+    color: appColors.textPrimary,
     paddingVertical: 14,
   },
   chip: {
@@ -412,16 +414,16 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#EBEBEB",
+    borderColor: appColors.borderSoft,
     marginRight: 8,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.surface,
   },
   chipActive: {
-    backgroundColor: "#222222",
-    borderColor: "#222222",
+    backgroundColor: appColors.primary,
+    borderColor: appColors.primary,
   },
-  chipText: { fontSize: 13, color: "#717171", fontWeight: "500" },
-  chipTextActive: { color: "#FFFFFF" },
+  chipText: { fontSize: 13, color: appColors.textMuted, fontWeight: "500" },
+  chipTextActive: { color: appColors.textOnPrimary },
   devicePickerButton: {
     flex: 1,
     flexDirection: "row",
@@ -429,8 +431,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
     borderWidth: 1,
-    borderColor: "#FFD6DF",
-    backgroundColor: "#FFF5F7",
+    borderColor: appColors.primaryBorder,
+    backgroundColor: appColors.primarySoft,
     borderRadius: 12,
     minHeight: 48,
     marginBottom: 12,
@@ -445,7 +447,7 @@ const styles = StyleSheet.create({
   devicePickerText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#FF385C",
+    color: appColors.primary,
   },
   imageThumbRow: {
     gap: 10,
@@ -458,7 +460,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     position: "relative",
     borderWidth: 1,
-    borderColor: "#EBEBEB",
+    borderColor: appColors.borderSoft,
   },
   imageThumb: {
     width: "100%",
@@ -478,7 +480,7 @@ const styles = StyleSheet.create({
   mediaVideoCount: {
     marginBottom: 8,
     fontSize: 12,
-    color: "#666666",
+    color: appColors.textMuted,
     fontWeight: "600",
   },
   mediaList: {
@@ -489,17 +491,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#EBEBEB",
+    borderColor: appColors.borderSoft,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 8,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.surface,
   },
   mediaItemText: {
     flex: 1,
     marginHorizontal: 8,
     fontSize: 13,
-    color: "#555555",
+    color: appColors.textMuted,
   },
   mediaRemoveButton: {
     width: 24,
@@ -507,34 +509,34 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F3F3F3",
+    backgroundColor: appColors.surfaceSoftAlt,
   },
   mediaHelperText: {
     marginTop: 2,
     fontSize: 12,
     lineHeight: 18,
-    color: "#808080",
+    color: appColors.textSubtle,
   },
   locationButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F7F7F7",
+    backgroundColor: appColors.surfaceMuted,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderWidth: 1,
-    borderColor: "#EBEBEB",
+    borderColor: appColors.borderSoft,
     gap: 8,
   },
-  locationButtonText: { fontSize: 15, color: "#717171", fontWeight: "500" },
-  locationButtonTextActive: { color: "#FF385C" },
+  locationButtonText: { fontSize: 15, color: appColors.textMuted, fontWeight: "500" },
+  locationButtonTextActive: { color: appColors.primary },
   submitButton: {
-    backgroundColor: "#FF385C",
+    backgroundColor: appColors.primary,
     borderRadius: 12,
     paddingVertical: 18,
     alignItems: "center",
     marginTop: 8,
   },
   submitButtonDisabled: { opacity: 0.6 },
-  submitButtonText: { color: "#FFFFFF", fontSize: 17, fontWeight: "700" },
+  submitButtonText: { color: appColors.textOnPrimary, fontSize: 17, fontWeight: "700" },
 });

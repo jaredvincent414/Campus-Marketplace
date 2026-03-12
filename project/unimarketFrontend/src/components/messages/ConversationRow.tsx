@@ -3,6 +3,7 @@ import { Pressable, View, Text, Image, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Conversation } from "../../types";
 import { UnreadBadge } from "./UnreadBadge";
+import { appColors } from "../../theme/colors";
 
 interface ConversationRowProps {
   conversation: Conversation;
@@ -26,10 +27,10 @@ const formatTimestamp = (rawDate: string) => {
 };
 
 const statusStyles: Record<string, { bg: string; color: string; label: string }> = {
-  available: { bg: "#EBFFF1", color: "#1D7A38", label: "Available" },
-  pending: { bg: "#FFF7E8", color: "#A86500", label: "Pending" },
-  sold: { bg: "#F3F3F3", color: "#6A6A6A", label: "Sold" },
-  deleted: { bg: "#F3F3F3", color: "#6A6A6A", label: "Unavailable" },
+  available: { bg: appColors.successSoft, color: appColors.success, label: "Available" },
+  pending: { bg: appColors.warningSoft, color: appColors.warning, label: "Pending" },
+  sold: { bg: appColors.surfaceSoftAlt, color: appColors.textMuted, label: "Sold" },
+  deleted: { bg: appColors.surfaceSoftAlt, color: appColors.textMuted, label: "Unavailable" },
 };
 
 export const ConversationRow: React.FC<ConversationRowProps> = ({ conversation, onPress }) => {
@@ -80,7 +81,7 @@ export const ConversationRow: React.FC<ConversationRowProps> = ({ conversation, 
           <Image source={{ uri: conversation.listing.thumbnailUrl }} style={styles.thumbnail} resizeMode="cover" />
         ) : (
           <View style={styles.thumbnailFallback}>
-            <Ionicons name="image-outline" size={15} color="#8A8A8A" />
+            <Ionicons name="image-outline" size={15} color={appColors.textPlaceholder} />
           </View>
         )}
       </View>
@@ -92,10 +93,10 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "flex-start",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.surface,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#ECECEC",
+    borderColor: appColors.borderSoft,
     padding: 14,
     marginBottom: 12,
     shadowColor: "#000000",
@@ -111,13 +112,13 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: "#FFF1F4",
+    backgroundColor: appColors.primarySoft,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
   },
   avatarText: {
-    color: "#FF385C",
+    color: appColors.primary,
     fontSize: 14,
     fontWeight: "700",
   },
@@ -135,7 +136,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontWeight: "600",
-    color: "#222222",
+    color: appColors.textPrimary,
     marginRight: 8,
   },
   nameUnread: {
@@ -143,11 +144,11 @@ const styles = StyleSheet.create({
   },
   timestamp: {
     fontSize: 12,
-    color: "#8A8A8A",
+    color: appColors.textPlaceholder,
   },
   listingTitle: {
     fontSize: 13,
-    color: "#4A4A4A",
+    color: appColors.textSecondary,
     marginBottom: 6,
     fontWeight: "600",
   },
@@ -159,10 +160,10 @@ const styles = StyleSheet.create({
   preview: {
     flex: 1,
     fontSize: 13,
-    color: "#7A7A7A",
+    color: appColors.textMuted,
   },
   previewUnread: {
-    color: "#3A3A3A",
+    color: appColors.textPrimary,
     fontWeight: "600",
   },
   statusChip: {
@@ -181,7 +182,7 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 12,
     overflow: "hidden",
-    backgroundColor: "#F6F6F6",
+    backgroundColor: appColors.surfaceMuted,
   },
   thumbnail: {
     width: "100%",
@@ -191,6 +192,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#F6F6F6",
+    backgroundColor: appColors.surfaceMuted,
   },
 });

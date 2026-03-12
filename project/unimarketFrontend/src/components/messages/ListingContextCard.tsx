@@ -2,6 +2,7 @@ import React from "react";
 import { Pressable, View, Text, Image, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ConversationListingContext } from "../../types";
+import { appColors } from "../../theme/colors";
 
 interface ListingContextCardProps {
   listing: ConversationListingContext;
@@ -9,10 +10,10 @@ interface ListingContextCardProps {
 }
 
 const statusLabels: Record<string, { label: string; color: string }> = {
-  available: { label: "Available", color: "#1D7A38" },
-  pending: { label: "Pending", color: "#A86500" },
-  sold: { label: "Sold", color: "#666666" },
-  deleted: { label: "Unavailable", color: "#666666" },
+  available: { label: "Available", color: appColors.success },
+  pending: { label: "Pending", color: appColors.warning },
+  sold: { label: "Sold", color: appColors.textMuted },
+  deleted: { label: "Unavailable", color: appColors.textMuted },
 };
 
 export const ListingContextCard: React.FC<ListingContextCardProps> = ({ listing, onPress }) => {
@@ -28,7 +29,7 @@ export const ListingContextCard: React.FC<ListingContextCardProps> = ({ listing,
           <Image source={{ uri: listing.thumbnailUrl }} style={styles.image} resizeMode="cover" />
         ) : (
           <View style={styles.fallback}>
-            <Ionicons name="image-outline" size={16} color="#8A8A8A" />
+            <Ionicons name="image-outline" size={16} color={appColors.textPlaceholder} />
           </View>
         )}
       </View>
@@ -41,7 +42,7 @@ export const ListingContextCard: React.FC<ListingContextCardProps> = ({ listing,
         <Text style={[styles.status, { color: statusMeta.color }]}>{statusMeta.label}</Text>
       </View>
 
-      {onPress ? <Ionicons name="chevron-forward" size={18} color="#9A9A9A" /> : null}
+      {onPress ? <Ionicons name="chevron-forward" size={18} color={appColors.textPlaceholder} /> : null}
     </Pressable>
   );
 };
@@ -49,10 +50,10 @@ export const ListingContextCard: React.FC<ListingContextCardProps> = ({ listing,
 const styles = StyleSheet.create({
   card: {
     borderWidth: 1,
-    borderColor: "#ECECEC",
+    borderColor: appColors.borderSoft,
     borderRadius: 16,
     padding: 10,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: appColors.surface,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
@@ -70,7 +71,7 @@ const styles = StyleSheet.create({
     height: 52,
     borderRadius: 12,
     overflow: "hidden",
-    backgroundColor: "#F6F6F6",
+    backgroundColor: appColors.surfaceMuted,
   },
   image: {
     width: "100%",
@@ -87,12 +88,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#222222",
+    color: appColors.textPrimary,
     marginBottom: 2,
   },
   price: {
     fontSize: 13,
-    color: "#222222",
+    color: appColors.textPrimary,
     fontWeight: "600",
     marginBottom: 1,
   },

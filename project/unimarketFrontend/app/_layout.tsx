@@ -2,6 +2,7 @@
 import { Stack } from "expo-router";
 import { ListingsProvider } from "../src/contexts/ListingsContext";
 import { UserProvider } from "../src/contexts/UserContext";
+import { appColors } from "../src/theme/colors";
 
 export default function RootLayout() {
   return (
@@ -18,9 +19,9 @@ export default function RootLayout() {
               presentation: "modal",
               title: "Create Listing",
               headerStyle: {
-                backgroundColor: "#2563eb",
+                backgroundColor: appColors.primary,
               },
-              headerTintColor: "#fff",
+              headerTintColor: appColors.textOnPrimary,
             }}
           />
         </Stack>
@@ -28,5 +29,4 @@ export default function RootLayout() {
     </ListingsProvider>
   );
 }
-
 

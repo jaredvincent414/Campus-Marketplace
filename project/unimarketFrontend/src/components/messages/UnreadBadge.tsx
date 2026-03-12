@@ -1,5 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
+import { appColors } from "../../theme/colors";
 
 interface UnreadBadgeProps {
   count: number;
@@ -20,13 +21,13 @@ const styles = StyleSheet.create({
     minWidth: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: "#FF385C",
+    backgroundColor: appColors.primary,
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 6,
   },
   badgeText: {
-    color: "#FFFFFF",
+    color: appColors.textOnPrimary,
     fontSize: 11,
     fontWeight: "700",
   },

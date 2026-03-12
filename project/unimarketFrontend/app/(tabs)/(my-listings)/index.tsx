@@ -6,6 +6,7 @@ import { useListings } from "../../../src/contexts/ListingsContext";
 import { useUser } from "../../../src/contexts/UserContext";
 import { ListingList } from "../../../src/components/ListingList";
 import { Ionicons } from "@expo/vector-icons";
+import { appColors } from "../../../src/theme/colors";
 
 export default function MyListingsScreen() {
   const router = useRouter();
@@ -34,7 +35,7 @@ export default function MyListingsScreen() {
           </Text>
         </View>
         <Pressable style={styles.addButton} onPress={() => router.push("/(modals)/create-listing")}>
-          <Ionicons name="add" size={22} color="#FFFFFF" />
+          <Ionicons name="add" size={22} color={appColors.textOnPrimary} />
         </Pressable>
       </View>
 
@@ -57,7 +58,7 @@ export default function MyListingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FFFFFF" },
+  container: { flex: 1, backgroundColor: appColors.pageBackground },
   header: {
     paddingHorizontal: 20,
     paddingVertical: 16,
@@ -65,24 +66,25 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     borderBottomWidth: 1,
-    borderBottomColor: "#EBEBEB",
+    borderBottomColor: appColors.borderSoft,
+    backgroundColor: appColors.surface,
   },
   headerTitle: {
     fontSize: 26,
     fontWeight: "800",
-    color: "#222222",
+    color: appColors.textPrimary,
     letterSpacing: -0.5,
   },
   headerSubtitle: {
     fontSize: 13,
-    color: "#717171",
+    color: appColors.textMuted,
     marginTop: 2,
   },
   addButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#FF385C",
+    backgroundColor: appColors.primary,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -98,8 +100,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: "#717171",
+    color: appColors.textMuted,
   },
 });
-
 
