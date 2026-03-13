@@ -157,7 +157,7 @@ export default function CreateListingScreen({ navigation }) {
                         disabled={locationLoading}
                     >
                         {locationLoading ? (
-                            <ActivityIndicator size="small" color="#007AFF" />
+                            <ActivityIndicator size="small" color="#2F54D7" />
                         ) : (
                             <Text style={styles.locationButtonText}>Use My Location</Text>
                         )}
@@ -228,14 +228,14 @@ const styles = StyleSheet.create({
     locationButton: {
         backgroundColor: "#fff",
         borderWidth: 1,
-        borderColor: "#007AFF",
+        borderColor: "#2F54D7",
         borderRadius: 8,
         padding: 12,
         alignItems: "center",
         marginTop: 8,
     },
     locationButtonText: {
-        color: "#007AFF",
+        color: "#2F54D7",
         fontSize: 16,
         fontWeight: "600",
     },
@@ -247,12 +247,12 @@ const styles = StyleSheet.create({
     },
     locationText: {
         fontSize: 14,
-        color: "#1976d2",
+        color: "#2F54D7",
         fontFamily: "monospace",
         marginBottom: 4,
     },
     submitButton: {
-        backgroundColor: "#0272eaff",
+        backgroundColor: "#2F54D7",
         padding: 16,
         borderRadius: 8,
         alignItems: "center",
@@ -268,4 +268,3 @@ const styles = StyleSheet.create({
         fontWeight: "600",
     },
 });
-

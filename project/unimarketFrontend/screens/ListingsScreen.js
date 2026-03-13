@@ -66,7 +66,7 @@ export default function ListingsScreen({ navigation }) {
     if (loading) {
         return (
             <View style={styles.centerContainer}>
-                <ActivityIndicator size="large" color="#007AFF" />
+                <ActivityIndicator size="large" color="#2F54D7" />
                 <Text style={styles.loadingText}>Loading listings...</Text>
             </View>
         );
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     retryButton: {
-        backgroundColor: "#007AFF",
+        backgroundColor: "#2F54D7",
         paddingHorizontal: 20,
         paddingVertical: 10,
         borderRadius: 8,
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     listingPrice: {
         fontSize: 20,
         fontWeight: "700",
-        color: "#007AFF",
+        color: "#2F54D7",
         marginBottom: 4,
     },
     listingCategory: {
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
         width: 56,
         height: 56,
         borderRadius: 28,
-        backgroundColor: "#007AFF",
+        backgroundColor: "#2F54D7",
         justifyContent: "center",
         alignItems: "center",
         shadowColor: "#000",
@@ -210,4 +210,3 @@ const styles = StyleSheet.create({
         fontWeight: "300",
     },
 });
-

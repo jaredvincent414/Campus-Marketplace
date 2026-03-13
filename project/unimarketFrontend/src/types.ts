@@ -24,6 +24,16 @@ export interface Listing {
   updatedAt?: string;
 }
 
+export interface UserProfile {
+  _id: string;
+  name: string;
+  email: string;
+  profileImageUrl?: string;
+  savedListingIds: string[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface LocationCoords {
   latitude: number;
   longitude: number;

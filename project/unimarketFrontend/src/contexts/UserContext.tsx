@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { BASE_URL } from "../services/api";
+import { upsertUserProfile } from "../services/api";
 
 type User = {
   name: string;
   email: string;
+  profileImageUrl?: string;
+  savedListingIds?: string[];
 };
 
 type StoredAccount = {
@@ -60,15 +62,22 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(nextUser));
   };
 
-  const persistUserToBackend = async (nextUser: User) => {
+  const persistUserToBackend = async (nextUser: User): Promise<User> => {
     try {
-      await fetch(`${BASE_URL}/api/users`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: nextUser.name, email: nextUser.email }),
+      const profile = await upsertUserProfile({
+        name: nextUser.name,
+        email: nextUser.email,
+        profileImageUrl: nextUser.profileImageUrl,
       });
+      return {
+        name: profile.name,
+        email: profile.email,
+        profileImageUrl: profile.profileImageUrl,
+        savedListingIds: profile.savedListingIds,
+      };
     } catch {
       // best effort only
+      return nextUser;
     }
   };
 
@@ -89,10 +98,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const nextUser = {
       name: u.name.trim(),
       email: normalizeEmail(u.email),
+      profileImageUrl: u.profileImageUrl,
+      savedListingIds: u.savedListingIds || [],
     };
-    setUser(nextUser);
-    await persistCurrentUser(nextUser);
-    await persistUserToBackend(nextUser);
+    const syncedUser = await persistUserToBackend(nextUser);
+    setUser(syncedUser);
+    await persistCurrentUser(syncedUser);
   };
 
   const signUp = async (input: { name: string; email: string; password: string }) => {

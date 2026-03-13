@@ -8,7 +8,13 @@ import { useListings } from "../../../src/contexts/ListingsContext";
 import { useUser } from "../../../src/contexts/UserContext";
 import { SearchBar } from "../../../src/components/SearchBar";
 import { ListingList } from "../../../src/components/ListingList";
-import { normalizeMediaUrl, purchaseListing } from "../../../src/services/api";
+import {
+  fetchUserProfile,
+  normalizeMediaUrl,
+  purchaseListing,
+  removeSavedListingForUser,
+  saveListingForUser,
+} from "../../../src/services/api";
 import { Listing } from "../../../src/types";
 import { useCreateOrOpenConversation } from "../../../src/hooks/useCreateOrOpenConversation";
 import { Ionicons } from "@expo/vector-icons";
@@ -38,12 +44,40 @@ export default function MarketScreen() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [savedListingIds, setSavedListingIds] = useState<string[]>([]);
+  const [savingListingId, setSavingListingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (listings.length === 0) {
       loadListings();
     }
   }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    const loadSavedState = async () => {
+      if (!user?.email) {
+        if (mounted) setSavedListingIds([]);
+        return;
+      }
+
+      try {
+        const profile = await fetchUserProfile(user.email);
+        if (mounted) {
+          setSavedListingIds(profile.savedListingIds || []);
+        }
+      } catch {
+        if (mounted) {
+          setSavedListingIds([]);
+        }
+      }
+    };
+
+    loadSavedState();
+    return () => {
+      mounted = false;
+    };
+  }, [user?.email]);
 
   const filteredListings = listings.filter((listing) => {
     const matchesSearch = listing.title.toLowerCase().includes(searchTerm.toLowerCase());
@@ -106,6 +140,33 @@ export default function MarketScreen() {
     }
   };
 
+  const handleToggleSavedListing = async () => {
+    if (!selectedListing) return;
+    if (!user?.email) {
+      Alert.alert("Profile required", "Please sign in before saving listings.");
+      return;
+    }
+
+    const isOwnListing = selectedListing.userEmail.toLowerCase() === user.email.toLowerCase();
+    if (isOwnListing) {
+      Alert.alert("Not allowed", "You cannot save your own listing.");
+      return;
+    }
+
+    const listingId = selectedListing._id;
+    try {
+      setSavingListingId(listingId);
+      const profile = savedListingIds.includes(listingId)
+        ? await removeSavedListingForUser(user.email, listingId)
+        : await saveListingForUser(user.email, listingId);
+      setSavedListingIds(profile.savedListingIds || []);
+    } catch (error) {
+      Alert.alert("Unable to update saved items", error instanceof Error ? error.message : "Please try again.");
+    } finally {
+      setSavingListingId(null);
+    }
+  };
+
   const singleListingFooter = filteredListings.length === 1 ? (
     <View style={styles.discoveryPanel}>
       <Text style={styles.discoveryTitle}>Want to keep browsing?</Text>
@@ -125,6 +186,8 @@ export default function MarketScreen() {
     selectedListing.userEmail.toLowerCase() === user.email.toLowerCase()
   );
   const selectedMedia = selectedListing?.media || [];
+  const selectedIsSaved = Boolean(selectedListing?._id && savedListingIds.includes(selectedListing._id));
+  const isSavingSelectedListing = Boolean(selectedListing?._id && savingListingId === selectedListing._id);
   const selectedImageUrls = Array.from(new Set(
     [
       normalizeMediaUrl(selectedListing?.imageUrl),
@@ -316,35 +379,52 @@ export default function MarketScreen() {
 
                   <View style={styles.divider} />
 
-                  <Pressable
-                    style={[
-                      styles.messageButton,
-                      (selectedIsOwnListing || openingConversation) && styles.messageButtonDisabled,
-                    ]}
-                    onPress={handleMessageSeller}
-                    disabled={selectedIsOwnListing || openingConversation}
-                  >
-                    <Ionicons name="chatbubble-ellipses-outline" size={16} color={appColors.primary} />
-                    <Text style={styles.messageButtonText}>
-                      {selectedIsOwnListing
-                        ? "You cannot message yourself"
-                        : openingConversation
-                          ? "Opening chat..."
-                          : "Message Seller"}
-                    </Text>
-                  </Pressable>
+                  {!selectedIsOwnListing ? (
+                    <>
+                      <Pressable
+                        style={[
+                          styles.saveButton,
+                          selectedIsSaved && styles.saveButtonActive,
+                          isSavingSelectedListing && styles.messageButtonDisabled,
+                        ]}
+                        onPress={handleToggleSavedListing}
+                        disabled={isSavingSelectedListing}
+                      >
+                        <Ionicons
+                          name={selectedIsSaved ? "bookmark" : "bookmark-outline"}
+                          size={16}
+                          color={selectedIsSaved ? appColors.textOnPrimary : appColors.primary}
+                        />
+                        <Text style={[styles.saveButtonText, selectedIsSaved && styles.saveButtonTextActive]}>
+                          {isSavingSelectedListing
+                            ? "Updating..."
+                            : selectedIsSaved
+                              ? "Saved to your profile"
+                              : "Save Item"}
+                        </Text>
+                      </Pressable>
 
-                  <Pressable
-                    style={[styles.buyButton, selectedIsOwnListing && styles.buyButtonDisabled]}
-                    onPress={handleBuy}
-                    disabled={selectedIsOwnListing}
-                  >
-                    <Text style={styles.buyButtonText}>
-                      {selectedIsOwnListing
-                        ? "You cannot reserve your own listing"
-                        : `Reserve — $${selectedListing.price.toFixed(2)}`}
-                    </Text>
-                  </Pressable>
+                      <Pressable
+                        style={[styles.messageButton, openingConversation && styles.messageButtonDisabled]}
+                        onPress={handleMessageSeller}
+                        disabled={openingConversation}
+                      >
+                        <Ionicons name="chatbubble-ellipses-outline" size={16} color={appColors.primary} />
+                        <Text style={styles.messageButtonText}>
+                          {openingConversation ? "Opening chat..." : "Message Seller"}
+                        </Text>
+                      </Pressable>
+
+                      <Pressable
+                        style={styles.buyButton}
+                        onPress={handleBuy}
+                      >
+                        <Text style={styles.buyButtonText}>
+                          {`Reserve — $${selectedListing.price.toFixed(2)}`}
+                        </Text>
+                      </Pressable>
+                    </>
+                  ) : null}
                 </ScrollView>
               </>
             )}
@@ -600,6 +680,30 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: appColors.primary,
     fontWeight: "600",
+  },
+  saveButton: {
+    borderWidth: 1,
+    borderColor: appColors.primaryBorder,
+    backgroundColor: appColors.surface,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 10,
+  },
+  saveButtonActive: {
+    borderColor: appColors.primary,
+    backgroundColor: appColors.primary,
+  },
+  saveButtonText: {
+    color: appColors.primary,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  saveButtonTextActive: {
+    color: appColors.textOnPrimary,
   },
   buyButton: {
     backgroundColor: appColors.primary,
