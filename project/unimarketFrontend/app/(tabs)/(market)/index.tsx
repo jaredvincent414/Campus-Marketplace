@@ -1,7 +1,7 @@
 // Market tab - main marketplace feed with search
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
-  View, Text, StyleSheet, SafeAreaView, Modal, Pressable, Alert, ScrollView, Image, Linking, Dimensions, ActivityIndicator,
+  View, Text, StyleSheet, SafeAreaView, Modal, Pressable, Alert, ScrollView, Image, Linking, Dimensions, ActivityIndicator, Animated, Easing,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useListings } from "../../../src/contexts/ListingsContext";
@@ -10,7 +10,8 @@ import { useSavedListings } from "../../../src/contexts/SavedListingsContext";
 import { SearchBar } from "../../../src/components/SearchBar";
 import { ListingList } from "../../../src/components/ListingList";
 import { normalizeMediaUrl, purchaseListing } from "../../../src/services/api";
-import { Listing } from "../../../src/types";
+import { getOrCreateMessagingSocket } from "../../../src/services/socket";
+import { Listing, ListingStatus } from "../../../src/types";
 import { useCreateOrOpenConversation } from "../../../src/hooks/useCreateOrOpenConversation";
 import { Ionicons } from "@expo/vector-icons";
 import { appColors } from "../../../src/theme/colors";
@@ -29,11 +30,14 @@ const CATEGORY_COLORS: Record<string, string> = {
 const HORIZONTAL_PADDING = 20;
 const BRAND_COLOR = appColors.primary;
 const MODAL_IMAGE_WIDTH = Dimensions.get("window").width;
+const HEADER_EXPANDED_HEIGHT = 266;
+const HEADER_COLLAPSED_HEIGHT = 190;
+const HEADER_SCROLL_DISTANCE = HEADER_EXPANDED_HEIGHT - HEADER_COLLAPSED_HEIGHT;
 
 export default function MarketScreen() {
   const router = useRouter();
   const { listingId } = useLocalSearchParams<{ listingId?: string }>();
-  const { listings, loadListings } = useListings();
+  const { listings, loadListings, syncListingStatus } = useListings();
   const { user } = useUser();
   const { isListingSaved, isSavePending, toggleSavedListing } = useSavedListings();
   const { openConversation, isLoading: openingConversation } = useCreateOrOpenConversation();
@@ -41,13 +45,161 @@ export default function MarketScreen() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [isHeaderCompact, setIsHeaderCompact] = useState(false);
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const titleIntro = useRef(new Animated.Value(0)).current;
+  const subtitleIntro = useRef(new Animated.Value(0)).current;
+  const searchIntro = useRef(new Animated.Value(0)).current;
+  const chipsIntro = useRef(new Animated.Value(0)).current;
+  const chipSelectionValues = useRef<Record<string, Animated.Value>>(
+    CATEGORIES.reduce((acc, category) => {
+      acc[category] = new Animated.Value(category === "All" ? 1 : 0);
+      return acc;
+    }, {} as Record<string, Animated.Value>)
+  ).current;
   const requestedListingId = typeof listingId === "string" ? listingId.trim() : "";
+
+  const collapseProgress = scrollY.interpolate({
+    inputRange: [0, HEADER_SCROLL_DISTANCE],
+    outputRange: [0, 1],
+    extrapolate: "clamp",
+  });
+  const headerHeight = scrollY.interpolate({
+    inputRange: [0, HEADER_SCROLL_DISTANCE],
+    outputRange: [HEADER_EXPANDED_HEIGHT, HEADER_COLLAPSED_HEIGHT],
+    extrapolate: "clamp",
+  });
+  const brandScale = collapseProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 0.83],
+  });
+  const brandLift = collapseProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -11],
+  });
+  const subtitleFade = collapseProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 0],
+  });
+  const subtitleLift = collapseProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -9],
+  });
+  const chipsLift = collapseProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -6],
+  });
+  const resultsOpacity = collapseProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 0.32],
+  });
+  const resultsLift = collapseProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -7],
+  });
+  const headerBadgeOpacity = collapseProgress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 0.66],
+  });
+  const titleIntroLift = titleIntro.interpolate({
+    inputRange: [0, 1],
+    outputRange: [12, 0],
+  });
+  const subtitleIntroLift = subtitleIntro.interpolate({
+    inputRange: [0, 1],
+    outputRange: [11, 0],
+  });
+  const searchIntroLift = searchIntro.interpolate({
+    inputRange: [0, 1],
+    outputRange: [10, 0],
+  });
+  const chipsIntroLift = chipsIntro.interpolate({
+    inputRange: [0, 1],
+    outputRange: [8, 0],
+  });
+  const animatedOnScroll = Animated.event(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    { useNativeDriver: false }
+  );
 
   useEffect(() => {
     if (listings.length === 0) {
       loadListings();
     }
   }, []);
+
+  useEffect(() => {
+    const socket = getOrCreateMessagingSocket(user?.email);
+
+    const handleListingStatus = (payload: { listingId?: string; status?: ListingStatus }) => {
+      if (!payload?.listingId || !payload?.status) return;
+      syncListingStatus(payload.listingId, payload.status);
+
+      setSelectedListing((prev) => {
+        if (!prev || prev._id !== payload.listingId) return prev;
+        const isActive = payload.status === "available" || payload.status === "pending";
+        return isActive ? { ...prev, status: payload.status } : null;
+      });
+    };
+
+    socket.on("listing:status", handleListingStatus);
+    return () => {
+      socket.off("listing:status", handleListingStatus);
+    };
+  }, [syncListingStatus, user?.email]);
+
+  useEffect(() => {
+    const introSequence = Animated.stagger(90, [
+      Animated.timing(titleIntro, {
+        toValue: 1,
+        duration: 260,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(subtitleIntro, {
+        toValue: 1,
+        duration: 230,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(searchIntro, {
+        toValue: 1,
+        duration: 230,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(chipsIntro, {
+        toValue: 1,
+        duration: 230,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]);
+    introSequence.start();
+  }, []);
+
+  useEffect(() => {
+    const id = scrollY.addListener(({ value }) => {
+      const nextCompact = value > HEADER_SCROLL_DISTANCE * 0.56;
+      setIsHeaderCompact((prev) => (prev === nextCompact ? prev : nextCompact));
+    });
+
+    return () => {
+      scrollY.removeListener(id);
+    };
+  }, [scrollY]);
+
+  useEffect(() => {
+    const animations = CATEGORIES.map((category) =>
+      Animated.timing(chipSelectionValues[category], {
+        toValue: category === selectedCategory ? 1 : 0,
+        duration: 180,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      })
+    );
+    Animated.parallel(animations).start();
+  }, [chipSelectionValues, selectedCategory]);
 
   useEffect(() => {
     if (!requestedListingId || selectedListing?._id === requestedListingId) return;
@@ -204,47 +356,144 @@ export default function MarketScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>UniMarket</Text>
-        <Text style={styles.headerSubtitle}>Find great deals on campus</Text>
-      </View>
-
-      {/* Search */}
-      <View style={styles.searchContainer}>
-        <SearchBar
-          value={searchTerm}
-          onChangeText={setSearchTerm}
-          onPressFilter={handleResetFilters}
-          hasActiveFilters={hasActiveFilters}
-        />
-      </View>
-
-      {/* Category filters */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.categoriesScroll}
-        contentContainerStyle={styles.categoriesContent}
-      >
-        {CATEGORIES.map((cat) => (
-          <Pressable
-            key={cat}
-            style={[styles.categoryChip, selectedCategory === cat && styles.categoryChipActive]}
-            onPress={() => setSelectedCategory(cat)}
+      <Animated.View style={[styles.headerShell, { height: headerHeight }]}>
+        <View style={styles.headerGlowPrimary} />
+        <View style={styles.headerGlowSecondary} />
+        <View style={styles.headerInner}>
+          <Animated.View
+            style={[
+              styles.brandRow,
+              {
+                opacity: titleIntro,
+                transform: [
+                  { translateY: Animated.add(titleIntroLift, brandLift) },
+                ],
+              },
+            ]}
           >
-            <Text style={[styles.categoryChipText, selectedCategory === cat && styles.categoryChipTextActive]}>
-              {cat}
-            </Text>
-          </Pressable>
-        ))}
-      </ScrollView>
+            <Animated.Text
+              style={[
+                styles.headerTitle,
+                {
+                  transform: [{ scale: brandScale }],
+                },
+              ]}
+            >
+              UniMarket
+            </Animated.Text>
+            <Animated.View style={[styles.brandBadge, { opacity: headerBadgeOpacity }]}>
+              <Ionicons name="school-outline" size={12} color={appColors.primary} />
+              <Text style={styles.brandBadgeText}>Brandeis</Text>
+            </Animated.View>
+          </Animated.View>
 
-      {/* Listings */}
+          <Animated.Text
+            style={[
+              styles.headerSubtitle,
+              {
+                opacity: Animated.multiply(subtitleIntro, subtitleFade),
+                transform: [{ translateY: Animated.add(subtitleIntroLift, subtitleLift) }],
+              },
+            ]}
+          >
+            Find great deals on campus
+          </Animated.Text>
+
+          <Animated.View
+            style={[
+              styles.searchContainer,
+              {
+                opacity: searchIntro,
+                transform: [{ translateY: searchIntroLift }],
+              },
+            ]}
+          >
+            <SearchBar
+              value={searchTerm}
+              onChangeText={setSearchTerm}
+              onPressFilter={handleResetFilters}
+              hasActiveFilters={hasActiveFilters}
+              placeholder="Search books, electronics, clothes..."
+              compact={isHeaderCompact}
+            />
+          </Animated.View>
+
+          <Animated.View
+            style={[
+              styles.categoriesWrap,
+              {
+                opacity: Animated.multiply(chipsIntro, collapseProgress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [1, 0.9],
+                })),
+                transform: [
+                  { translateY: Animated.add(chipsIntroLift, chipsLift) },
+                ],
+              },
+            ]}
+          >
+            <ScrollView
+              horizontal
+              decelerationRate="fast"
+              showsHorizontalScrollIndicator={false}
+              style={styles.categoriesScroll}
+              contentContainerStyle={styles.categoriesContent}
+            >
+              {CATEGORIES.map((cat) => {
+                const chipSelection = chipSelectionValues[cat];
+                return (
+                  <Animated.View
+                    key={cat}
+                    style={{
+                      transform: [
+                        {
+                          scale: chipSelection.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [1, 1.04],
+                          }),
+                        },
+                        {
+                          translateY: chipSelection.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0, -1],
+                          }),
+                        },
+                      ],
+                    }}
+                  >
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.categoryChip,
+                        selectedCategory === cat && styles.categoryChipActive,
+                        pressed && styles.categoryChipPressed,
+                      ]}
+                      onPress={() => setSelectedCategory(cat)}
+                    >
+                      <Text style={[styles.categoryChipText, selectedCategory === cat && styles.categoryChipTextActive]}>
+                        {cat}
+                      </Text>
+                    </Pressable>
+                  </Animated.View>
+                );
+              })}
+            </ScrollView>
+          </Animated.View>
+
+          <Animated.Text
+            style={[
+              styles.resultsCount,
+              {
+                opacity: resultsOpacity,
+                transform: [{ translateY: resultsLift }],
+              },
+            ]}
+          >
+            {filteredListings.length} {filteredListings.length === 1 ? "listing" : "listings"}
+          </Animated.Text>
+        </View>
+      </Animated.View>
+
       <View style={styles.content}>
-        <Text style={styles.resultsCount}>
-          {filteredListings.length} {filteredListings.length === 1 ? "listing" : "listings"}
-        </Text>
         <ListingList
           data={filteredListings}
           onPressListing={setSelectedListing}
@@ -254,6 +503,9 @@ export default function MarketScreen() {
           onToggleSaveListing={handleToggleSavedListing}
           singleItemMode="featured"
           listFooter={singleListingFooter}
+          onScroll={animatedOnScroll}
+          scrollEventThrottle={16}
+          listContentContainerStyle={styles.listContentContainer}
         />
       </View>
 
@@ -424,47 +676,113 @@ export default function MarketScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: appColors.pageBackground },
-  header: {
+  headerShell: {
+    marginHorizontal: 14,
+    marginTop: 6,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: appColors.borderSoft,
+    backgroundColor: appColors.surface,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 7 },
+    shadowOpacity: 0.09,
+    shadowRadius: 16,
+    elevation: 3,
+  },
+  headerGlowPrimary: {
+    position: "absolute",
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: "rgba(47,84,215,0.14)",
+    top: -108,
+    right: -78,
+  },
+  headerGlowSecondary: {
+    position: "absolute",
+    width: 170,
+    height: 170,
+    borderRadius: 85,
+    backgroundColor: "rgba(47,84,215,0.09)",
+    bottom: -98,
+    left: -44,
+  },
+  headerInner: {
+    flex: 1,
     paddingHorizontal: HORIZONTAL_PADDING,
-    paddingTop: 12,
+    paddingTop: 14,
+    paddingBottom: 10,
+  },
+  brandRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   headerTitle: {
-    fontSize: 31,
+    fontSize: 33,
     fontWeight: "800",
     color: appColors.textPrimary,
-    letterSpacing: -0.6,
+    letterSpacing: -0.8,
+  },
+  brandBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: appColors.primarySoft,
+    borderWidth: 1,
+    borderColor: appColors.primaryBorder,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  brandBadgeText: {
+    color: appColors.primary,
+    fontSize: 11,
+    fontWeight: "700",
   },
   headerSubtitle: {
+    marginTop: 5,
     fontSize: 13,
     color: appColors.textSecondary,
-    marginTop: 3,
+    fontWeight: "500",
   },
   searchContainer: {
-    paddingHorizontal: HORIZONTAL_PADDING,
     marginTop: 14,
-    marginBottom: 14,
+  },
+  categoriesWrap: {
+    marginTop: 13,
   },
   categoriesScroll: {
-    maxHeight: 44,
-    marginBottom: 16,
+    maxHeight: 42,
   },
   categoriesContent: {
-    paddingHorizontal: HORIZONTAL_PADDING,
+    paddingLeft: 1,
+    paddingRight: 24,
+    alignItems: "center",
   },
   categoryChip: {
-    minHeight: 36,
-    paddingHorizontal: 17,
-    paddingVertical: 8,
+    minHeight: 34,
+    paddingHorizontal: 16,
+    paddingVertical: 7,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: appColors.primaryBorderStrong,
-    backgroundColor: appColors.surface,
-    marginRight: 10,
+    borderColor: appColors.primaryBorder,
+    backgroundColor: appColors.surfaceSoft,
+    marginRight: 9,
     justifyContent: "center",
   },
   categoryChipActive: {
     backgroundColor: BRAND_COLOR,
-    borderColor: BRAND_COLOR,
+    borderColor: appColors.primaryDark,
+    shadowColor: BRAND_COLOR,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.24,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  categoryChipPressed: {
+    transform: [{ scale: 0.97 }],
   },
   categoryChipText: {
     fontSize: 12,
@@ -477,12 +795,19 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: HORIZONTAL_PADDING,
+    marginTop: 10,
+  },
+  listContentContainer: {
+    paddingTop: 2,
   },
   resultsCount: {
-    fontSize: 13,
+    marginTop: 12,
+    fontSize: 12,
     color: appColors.textMuted,
-    marginBottom: 14,
-    fontWeight: "600",
+    marginBottom: 2,
+    fontWeight: "700",
+    letterSpacing: 0.2,
+    textTransform: "uppercase",
   },
   discoveryPanel: {
     marginTop: 8,

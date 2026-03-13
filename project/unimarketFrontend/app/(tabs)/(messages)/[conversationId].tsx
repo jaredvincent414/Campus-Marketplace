@@ -13,6 +13,7 @@ import {
 import { useLocalSearchParams, useFocusEffect, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useUser } from "../../../src/contexts/UserContext";
+import { useListings } from "../../../src/contexts/ListingsContext";
 import { Conversation, Message } from "../../../src/types";
 import {
   fetchConversationById,
@@ -38,6 +39,7 @@ export default function ConversationScreen() {
   const router = useRouter();
   const { conversationId } = useLocalSearchParams<{ conversationId: string }>();
   const { user } = useUser();
+  const { syncListingStatus, loadUserListings } = useListings();
   const listRef = useRef<FlatList<Message>>(null);
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [conversationLoading, setConversationLoading] = useState(false);
@@ -258,13 +260,18 @@ export default function ConversationScreen() {
       setIsUpdatingListingStatus(true);
       const updater = nextStatus === "pending" ? markListingPending : markListingSold;
       const updated = await updater(conversation.listing.id, user.email);
+      const nextListingStatus = (updated.status || nextStatus) as Conversation["listing"]["status"];
+      syncListingStatus(conversation.listing.id, nextListingStatus);
+      loadUserListings(user.email).catch(() => {
+        // best-effort refresh; local state was already synced
+      });
       setConversation((prev) =>
         prev
           ? {
               ...prev,
               listing: {
                 ...prev.listing,
-                status: (updated.status || nextStatus) as Conversation["listing"]["status"],
+                status: nextListingStatus,
               },
             }
           : prev

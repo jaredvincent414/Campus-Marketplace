@@ -1,6 +1,6 @@
 // Context for managing listings state across the app
 import React, { createContext, useContext, useState, ReactNode } from "react";
-import { Listing } from "../types";
+import { Listing, ListingStatus } from "../types";
 import { fetchListings, fetchListingsByUser } from "../services/api";
 
 interface ListingsContextType {
@@ -11,6 +11,7 @@ interface ListingsContextType {
   loadListings: () => Promise<void>;
   loadUserListings: (email: string) => Promise<void>;
   addListing: (listing: Listing) => void;
+  syncListingStatus: (listingId: string, status: ListingStatus) => void;
 }
 
 const ListingsContext = createContext<ListingsContextType | undefined>(
@@ -60,6 +61,25 @@ export const ListingsProvider = ({ children }: { children: ReactNode }) => {
     setUserListings((prev) => [listing, ...prev]);
   };
 
+  const syncListingStatus = (listingId: string, status: ListingStatus) => {
+    const isActive = status === "available" || status === "pending";
+
+    const updateCollection = (collection: Listing[]) => {
+      if (!collection.some((listing) => listing._id === listingId)) {
+        return collection;
+      }
+      if (!isActive) {
+        return collection.filter((listing) => listing._id !== listingId);
+      }
+      return collection.map((listing) =>
+        listing._id === listingId ? { ...listing, status } : listing
+      );
+    };
+
+    setListings((prev) => updateCollection(prev));
+    setUserListings((prev) => updateCollection(prev));
+  };
+
   return (
     <ListingsContext.Provider
       value={{
@@ -70,6 +90,7 @@ export const ListingsProvider = ({ children }: { children: ReactNode }) => {
         loadListings,
         loadUserListings,
         addListing,
+        syncListingStatus,
       }}
     >
       {children}
@@ -88,5 +109,4 @@ export const useListings = (): ListingsContextType => {
   }
   return context;
 };
-
 

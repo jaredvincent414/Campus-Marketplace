@@ -9,6 +9,7 @@ const { buildMediaUrl, uploadBufferToMediaStorage } = require("../utils/mediaSto
  */
 
 const normalizeEmail = (email = "") => String(email).trim().toLowerCase();
+const escapeRegex = (value = "") => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const isHttpUrl = (value = "") => {
     try {
         const parsed = new URL(String(value).trim());
@@ -75,10 +76,11 @@ const getListings = async (req, res) => {
 // GET /api/listings/user/:email (listings by user email)
 const getListingsByUser = async (req, res) => {
     try {
-        const { email } = req.params;  
+        const { email } = req.params;
+        const normalizedEmail = normalizeEmail(email);
         const listings = await Listing.find({
-            userEmail: email,
-            status: { $ne: "deleted" },
+            userEmail: new RegExp(`^${escapeRegex(normalizedEmail)}$`, "i"),
+            status: { $in: ["available", "pending"] },
         }).sort({ createdAt: -1 });
         res.json(listings);
     } catch (err) {
