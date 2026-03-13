@@ -163,7 +163,8 @@ const uploadListingMedia = async (req, res) => {
 const purchaseListing = async (req, res) => {
     try {
         const { buyerEmail } = req.body;
-        if (!buyerEmail) {
+        const normalizedBuyerEmail = normalizeEmail(buyerEmail);
+        if (!normalizedBuyerEmail) {
             return res.status(400).json({ message: "buyerEmail is required" });
         }
 
@@ -172,7 +173,7 @@ const purchaseListing = async (req, res) => {
             return res.status(404).json({ message: "Listing not found" });
         }
 
-        if (normalizeEmail(listing.userEmail) === normalizeEmail(buyerEmail)) {
+        if (normalizeEmail(listing.userEmail) === normalizedBuyerEmail) {
             return res.status(403).json({ message: "You cannot buy your own listing" });
         }
 
@@ -181,6 +182,8 @@ const purchaseListing = async (req, res) => {
         }
 
         listing.status = "sold";
+        listing.buyerEmail = normalizedBuyerEmail;
+        listing.purchasedAt = new Date();
         await listing.save();
         await syncListingStatusToConversations(req, listing);
         res.json({ message: "Purchase successful" });
@@ -207,6 +210,8 @@ const markListingPending = async (req, res) => {
         }
 
         listing.status = "pending";
+        listing.buyerEmail = undefined;
+        listing.purchasedAt = undefined;
         await listing.save();
         await syncListingStatusToConversations(req, listing);
         res.json(listing);
@@ -233,6 +238,8 @@ const markListingSold = async (req, res) => {
         }
 
         listing.status = "sold";
+        listing.buyerEmail = undefined;
+        listing.purchasedAt = undefined;
         await listing.save();
         await syncListingStatusToConversations(req, listing);
         res.json(listing);

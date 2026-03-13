@@ -23,6 +23,23 @@ const normalizeUserPayload = (user) => {
   };
 };
 
+const withPurchasesCount = async (payload) => {
+  const normalizedEmail = normalizeEmail(payload?.email);
+  if (!normalizedEmail) {
+    return { ...payload, purchasesCount: 0 };
+  }
+
+  const purchasesCount = await Listing.countDocuments({
+    buyerEmail: normalizedEmail,
+    status: "sold",
+  });
+
+  return {
+    ...payload,
+    purchasesCount,
+  };
+};
+
 // Create or update a user by email (no external dependency)
 const createOrUpdateUser = async (req, res, next) => {
   try {
@@ -48,7 +65,7 @@ const createOrUpdateUser = async (req, res, next) => {
         user.profileImageUrl = photo;
       }
       await user.save();
-      return res.json(normalizeUserPayload(user));
+      return res.json(await withPurchasesCount(normalizeUserPayload(user)));
     }
 
     const nextPhoto = String(profileImageUrl || "").trim();
@@ -62,7 +79,7 @@ const createOrUpdateUser = async (req, res, next) => {
       profileImageUrl: nextPhoto,
       savedListingIds: [],
     });
-    return res.status(201).json(normalizeUserPayload(user));
+    return res.status(201).json(await withPurchasesCount(normalizeUserPayload(user)));
   } catch (err) {
     next(err);
   }
@@ -81,7 +98,7 @@ const getUserByEmail = async (req, res, next) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    return res.json(normalizeUserPayload(user));
+    return res.json(await withPurchasesCount(normalizeUserPayload(user)));
   } catch (err) {
     next(err);
   }
@@ -136,7 +153,7 @@ const updateUserProfilePhoto = async (req, res, next) => {
     if (previousPhotoUrl && previousPhotoUrl !== profileImageUrl) {
       await deleteMediaByUrl(previousPhotoUrl);
     }
-    return res.json(normalizeUserPayload(user));
+    return res.json(await withPurchasesCount(normalizeUserPayload(user)));
   } catch (err) {
     next(err);
   }
@@ -200,7 +217,7 @@ const saveListingForUser = async (req, res, next) => {
       { $addToSet: { savedListingIds: listing._id } }
     );
     const updatedUser = await User.findById(user._id);
-    return res.json(normalizeUserPayload(updatedUser));
+    return res.json(await withPurchasesCount(normalizeUserPayload(updatedUser)));
   } catch (err) {
     next(err);
   }
@@ -228,7 +245,7 @@ const removeSavedListingForUser = async (req, res, next) => {
       { $pull: { savedListingIds: listingId } }
     );
     const updatedUser = await User.findById(user._id);
-    return res.json(normalizeUserPayload(updatedUser));
+    return res.json(await withPurchasesCount(normalizeUserPayload(updatedUser)));
   } catch (err) {
     next(err);
   }
