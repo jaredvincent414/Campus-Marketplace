@@ -1,8 +1,9 @@
 // Market tab - main marketplace feed with search
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
-  View, Text, StyleSheet, SafeAreaView, Modal, Pressable, Alert, ScrollView, Image, Linking, Dimensions, ActivityIndicator, Animated, Easing,
+  View, Text, StyleSheet, Modal, Pressable, Alert, ScrollView, Image, Linking, Dimensions, ActivityIndicator, Animated, Easing,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useListings } from "../../../src/contexts/ListingsContext";
 import { useUser } from "../../../src/contexts/UserContext";
@@ -154,25 +155,25 @@ export default function MarketScreen() {
         toValue: 1,
         duration: 260,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
       Animated.timing(subtitleIntro, {
         toValue: 1,
         duration: 230,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
       Animated.timing(searchIntro, {
         toValue: 1,
         duration: 230,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
       Animated.timing(chipsIntro, {
         toValue: 1,
         duration: 230,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
     ]);
     introSequence.start();
@@ -195,7 +196,7 @@ export default function MarketScreen() {
         toValue: category === selectedCategory ? 1 : 0,
         duration: 180,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
+        useNativeDriver: false,
       })
     );
     Animated.parallel(animations).start();

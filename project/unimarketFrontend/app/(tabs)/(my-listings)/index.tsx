@@ -1,7 +1,8 @@
 // My Listings tab - shows user's listings
 import React, { useEffect } from "react";
-import { View, Text, StyleSheet, SafeAreaView, Pressable } from "react-native";
+import { View, Text, StyleSheet, Pressable } from "react-native";
 import { useRouter } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useListings } from "../../../src/contexts/ListingsContext";
 import { useUser } from "../../../src/contexts/UserContext";
 import { ListingList } from "../../../src/components/ListingList";
@@ -103,4 +104,3 @@ const styles = StyleSheet.create({
     color: appColors.textMuted,
   },
 });
-

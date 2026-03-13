@@ -74,7 +74,7 @@ export default function TabsLayout() {
         options={{
           title: "My Listings",
           tabBarIcon: ({ color, size, focused }) => (
-            renderTabIcon("pricetag-outline", color, size, focused)
+            renderTabIcon("bag-handle-outline", color, size, focused)
           ),
         }}
       />

@@ -1,7 +1,8 @@
 import React, { useCallback } from "react";
-import { SafeAreaView, View, Text, StyleSheet, FlatList, Pressable } from "react-native";
+import { View, Text, StyleSheet, FlatList, Pressable } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useUser } from "../../../src/contexts/UserContext";
 import { Conversation } from "../../../src/types";
 import { useConversations } from "../../../src/hooks/useConversations";
