@@ -1,6 +1,6 @@
 // Card component for displaying a single listing
 import React, { useEffect, useState } from "react";
-import { View, Text, Pressable, StyleSheet, Alert, Image } from "react-native";
+import { View, Text, Pressable, StyleSheet, Alert, Image, ActivityIndicator } from "react-native";
 import { Listing } from "../types";
 import { deleteListing, normalizeMediaUrl } from "../services/api";
 import { Ionicons } from "@expo/vector-icons";
@@ -33,6 +33,9 @@ interface ListingCardProps {
   userEmail?: string;
   onDelete?: () => void;
   featured?: boolean;
+  isSaved?: boolean;
+  savePending?: boolean;
+  onToggleSave?: () => void;
 }
 
 export const ListingCard: React.FC<ListingCardProps> = ({
@@ -41,12 +44,27 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   userEmail,
   onDelete,
   featured = false,
+  isSaved = false,
+  savePending = false,
+  onToggleSave,
 }) => {
-  const isOwnListing = userEmail && userEmail === listing.userEmail;
+  const isOwnListing = Boolean(
+    userEmail &&
+    listing.userEmail &&
+    userEmail.toLowerCase() === listing.userEmail.toLowerCase()
+  );
+  const canToggleSave = Boolean(onToggleSave) && !isOwnListing;
   const category = listing.category || "General";
   const placeholderColor = CATEGORY_COLORS[category] ?? "#D3DDFB";
   const emoji = CATEGORY_EMOJIS[category] ?? "🛍️";
   const metadataLine = [listing.condition, listing.locationName].filter(Boolean).join(" • ");
+  const listingStatus = String(listing.status || "available").toLowerCase();
+  const showStatusBadge = listingStatus !== "available";
+  const statusLabel = listingStatus === "pending"
+    ? "Pending"
+    : listingStatus === "sold"
+      ? "Sold"
+      : listingStatus.charAt(0).toUpperCase() + listingStatus.slice(1);
   const media = listing.media || [];
   const imageUrls = Array.from(new Set(
     [
@@ -83,6 +101,12 @@ export const ListingCard: React.FC<ListingCardProps> = ({
         },
       },
     ]);
+  };
+
+  const handleToggleSavePress = (event: any) => {
+    event?.stopPropagation?.();
+    if (!canToggleSave || savePending) return;
+    onToggleSave?.();
   };
 
   return (
@@ -131,6 +155,30 @@ export const ListingCard: React.FC<ListingCardProps> = ({
             )}
           </View>
         )}
+        {canToggleSave ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={isSaved ? "Remove from saved" : "Save item"}
+            onPress={handleToggleSavePress}
+            disabled={savePending}
+            style={({ pressed }) => [
+              styles.saveButton,
+              isSaved && styles.saveButtonActive,
+              savePending && styles.saveButtonPending,
+              pressed && styles.saveButtonPressed,
+            ]}
+          >
+            {savePending ? (
+              <ActivityIndicator size="small" color={isSaved ? appColors.textOnPrimary : appColors.primary} />
+            ) : (
+              <Ionicons
+                name={isSaved ? "heart" : "heart-outline"}
+                size={16}
+                color={isSaved ? appColors.textOnPrimary : appColors.textPrimary}
+              />
+            )}
+          </Pressable>
+        ) : null}
         {isOwnListing && (
           <View style={styles.ownerBadge}>
             <Text style={styles.ownerBadgeText}>Yours</Text>
@@ -143,9 +191,28 @@ export const ListingCard: React.FC<ListingCardProps> = ({
         </Text>
         <Text style={styles.category}>{category}</Text>
         {metadataLine ? <Text style={styles.metadata}>{metadataLine}</Text> : null}
-        <Text style={styles.price}>
-          <Text style={styles.priceAmount}>${listing.price.toFixed(2)}</Text>
-        </Text>
+        <View style={styles.priceRow}>
+          <Text style={styles.price}>
+            <Text style={styles.priceAmount}>${listing.price.toFixed(2)}</Text>
+          </Text>
+          {showStatusBadge ? (
+            <View
+              style={[
+                styles.statusBadge,
+                listingStatus === "sold" ? styles.statusBadgeSold : styles.statusBadgePending,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.statusBadgeText,
+                  listingStatus === "sold" ? styles.statusBadgeTextSold : styles.statusBadgeTextPending,
+                ]}
+              >
+                {statusLabel}
+              </Text>
+            </View>
+          ) : null}
+        </View>
       </View>
     </Pressable>
   );
@@ -238,6 +305,34 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: appColors.primary,
   },
+  saveButton: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "rgba(255,255,255,0.95)",
+    borderWidth: 1,
+    borderColor: appColors.borderSoft,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  saveButtonActive: {
+    backgroundColor: appColors.primary,
+    borderColor: appColors.primary,
+  },
+  saveButtonPending: {
+    opacity: 0.86,
+  },
+  saveButtonPressed: {
+    transform: [{ scale: 0.94 }],
+  },
   mediaBadges: {
     position: "absolute",
     left: 10,
@@ -289,8 +384,40 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: appColors.textPrimary,
   },
+  priceRow: {
+    marginTop: 2,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
   priceAmount: {
     fontWeight: "800",
     fontSize: 18,
+  },
+  statusBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderWidth: 1,
+  },
+  statusBadgePending: {
+    backgroundColor: appColors.primarySoft,
+    borderColor: appColors.primaryBorder,
+  },
+  statusBadgeSold: {
+    backgroundColor: appColors.surfaceSoft,
+    borderColor: appColors.borderSoft,
+  },
+  statusBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.2,
+  },
+  statusBadgeTextPending: {
+    color: appColors.primary,
+  },
+  statusBadgeTextSold: {
+    color: appColors.textMuted,
   },
 });

@@ -88,6 +88,15 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="(profile)/saved-items"
+        options={{
+          title: "Saved",
+          tabBarIcon: ({ color, size, focused }) => (
+            renderTabIcon("heart-outline", color, size, focused)
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="(profile)/index"
         options={{
           title: "Profile",
@@ -104,12 +113,6 @@ export default function TabsLayout() {
               )}
             </View>
           ),
-        }}
-      />
-      <Tabs.Screen
-        name="(profile)/saved-items"
-        options={{
-          href: null,
         }}
       />
     </Tabs>
