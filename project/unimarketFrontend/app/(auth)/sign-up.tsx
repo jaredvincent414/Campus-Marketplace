@@ -99,7 +99,7 @@ export default function SignUpScreen() {
               label="School Email"
               value={email}
               onChangeText={setEmail}
-              placeholder="you@school.edu"
+              placeholder="you@brandeis.edu"
               keyboardType="email-address"
             />
             <AuthInput
