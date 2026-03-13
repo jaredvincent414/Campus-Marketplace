@@ -4,6 +4,9 @@ const { upload } = require("../middleware/uploadMiddleware");
 const {
   createOrUpdateUser,
   getUserByEmail,
+  upsertUserPushToken,
+  deactivateUserPushToken,
+  updateNotificationPreferences,
   uploadUserProfilePhoto,
   updateUserProfilePhoto,
   getSavedListings,
@@ -24,6 +27,9 @@ router.get("/:email/saved-listings", getSavedListings);
 router.post("/:email/saved-listings/:listingId", saveListingForUser);
 router.delete("/:email/saved-listings/:listingId", removeSavedListingForUser);
 router.put("/:email/profile-photo", updateUserProfilePhoto);
+router.put("/:email/push-token", upsertUserPushToken);
+router.delete("/:email/push-token", deactivateUserPushToken);
+router.put("/:email/notification-preferences", updateNotificationPreferences);
 router.get("/:email", getUserByEmail);
 
 module.exports = router;

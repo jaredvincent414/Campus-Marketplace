@@ -24,6 +24,14 @@ export interface Listing {
   updatedAt?: string;
 }
 
+export interface NotificationPreferences {
+  messages: boolean;
+  listingUpdates: boolean;
+  savedItemUpdates: boolean;
+  system: boolean;
+  marketing: boolean;
+}
+
 export interface UserProfile {
   _id: string;
   name: string;
@@ -31,6 +39,7 @@ export interface UserProfile {
   profileImageUrl?: string;
   savedListingIds: string[];
   purchasesCount?: number;
+  notificationPreferences?: NotificationPreferences;
   createdAt?: string;
   updatedAt?: string;
 }

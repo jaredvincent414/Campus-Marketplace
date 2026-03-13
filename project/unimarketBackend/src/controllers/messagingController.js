@@ -2,6 +2,7 @@ const Conversation = require("../models/Conversation");
 const Message = require("../models/Message");
 const Listing = require("../models/Listing");
 const User = require("../models/User");
+const { sendNotificationToUsers } = require("../services/pushNotificationService");
 
 const normalizeEmail = (email = "") => String(email).trim().toLowerCase();
 const truncatePreview = (value = "", max = 160) => {
@@ -308,6 +309,31 @@ const sendMessage = async (req, res) => {
       io.to(`conversation:${String(conversation._id)}`).emit("message:new", formattedMessage);
       emitInboxRefresh(io, [conversation.buyerEmail, conversation.sellerEmail], {
         conversationId: String(conversation._id),
+      });
+    }
+
+    const recipientEmail =
+      role === "buyer" ? normalizeEmail(conversation.sellerEmail) : normalizeEmail(conversation.buyerEmail);
+    const listingTitle = String(conversation?.listingSnapshot?.title || "a listing").trim();
+    const sender = await User.findOne({ email: senderEmail }).select("name").lean();
+    const senderName = String(sender?.name || senderEmail.split("@")[0] || "Someone").trim();
+
+    if (recipientEmail && recipientEmail !== senderEmail) {
+      void sendNotificationToUsers({
+        emails: [recipientEmail],
+        preferenceKey: "messages",
+        title: "New message",
+        body: `${senderName} messaged you about ${listingTitle}`,
+        data: {
+          type: "message",
+          conversationId: String(conversation._id),
+          listingId: String(conversation.listingId),
+        },
+      }).catch((notificationError) => {
+        console.warn(
+          "[notifications] Failed to send message notification:",
+          notificationError instanceof Error ? notificationError.message : String(notificationError)
+        );
       });
     }
 

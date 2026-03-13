@@ -3,10 +3,16 @@ import { Tabs, Redirect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { View, StyleSheet, ActivityIndicator, Image } from "react-native";
 import { useUser } from "../../src/contexts/UserContext";
+import { useConversations } from "../../src/hooks/useConversations";
+import { usePushNotifications } from "../../src/hooks/usePushNotifications";
+import { useUnreadCount } from "../../src/hooks/useUnreadCount";
 import { appColors } from "../../src/theme/colors";
 
 export default function TabsLayout() {
   const { user, isHydrated } = useUser();
+  usePushNotifications(user?.email);
+  const { conversations } = useConversations(user?.email);
+  const unreadConversationCount = useUnreadCount(conversations);
 
   const renderTabIcon = (
     name: keyof typeof Ionicons.glyphMap,
@@ -58,6 +64,15 @@ export default function TabsLayout() {
         tabBarItemStyle: {
           paddingHorizontal: 2,
         },
+        tabBarBadgeStyle: {
+          backgroundColor: appColors.primary,
+          color: appColors.textOnPrimary,
+          fontSize: 10,
+          fontWeight: "700",
+          minWidth: 18,
+          height: 18,
+          lineHeight: 18,
+        },
       }}
     >
       <Tabs.Screen
@@ -82,6 +97,12 @@ export default function TabsLayout() {
         name="(messages)"
         options={{
           title: "Messages",
+          tabBarBadge:
+            unreadConversationCount > 0
+              ? unreadConversationCount > 99
+                ? "99+"
+                : unreadConversationCount
+              : undefined,
           tabBarIcon: ({ color, size, focused }) => (
             renderTabIcon("chatbubble-ellipses-outline", color, size, focused)
           ),
