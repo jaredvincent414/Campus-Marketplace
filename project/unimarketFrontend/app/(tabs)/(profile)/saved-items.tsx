@@ -1,67 +1,52 @@
-import React, { useCallback, useState } from "react";
-import { SafeAreaView, View, Text, StyleSheet, Pressable, ActivityIndicator, FlatList, Alert } from "react-native";
+import React, { useCallback } from "react";
+import { SafeAreaView, View, Text, StyleSheet, Pressable, ActivityIndicator, Alert } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useUser } from "../../../src/contexts/UserContext";
-import { ListingCard } from "../../../src/components/ListingCard";
-import { fetchSavedListings, removeSavedListingForUser } from "../../../src/services/api";
+import { useSavedListings } from "../../../src/contexts/SavedListingsContext";
 import { Listing } from "../../../src/types";
+import { ListingList } from "../../../src/components/ListingList";
 import { appColors } from "../../../src/theme/colors";
 
 export default function SavedItemsScreen() {
   const router = useRouter();
   const { user } = useUser();
-  const [savedListings, setSavedListings] = useState<Listing[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [unsavingListingId, setUnsavingListingId] = useState<string | null>(null);
-
-  const loadSavedItems = useCallback(async () => {
-    if (!user?.email) {
-      setSavedListings([]);
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      setError(null);
-      const listings = await fetchSavedListings(user.email);
-      setSavedListings(listings);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Unable to load saved items.";
-      setError(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user?.email]);
+  const {
+    savedListings,
+    isLoading,
+    error,
+    refreshSavedListings,
+    toggleSavedListing,
+    isListingSaved,
+    isSavePending,
+  } = useSavedListings();
 
   useFocusEffect(
     useCallback(() => {
-      loadSavedItems();
-    }, [loadSavedItems])
+      refreshSavedListings();
+    }, [refreshSavedListings])
   );
 
-  const handleUnsave = async (listingId: string) => {
-    if (!user?.email) return;
-
+  const handleToggleSave = async (listing: Listing) => {
     try {
-      setUnsavingListingId(listingId);
-      await removeSavedListingForUser(user.email, listingId);
-      setSavedListings((prev) => prev.filter((listing) => listing._id !== listingId));
+      await toggleSavedListing(listing);
     } catch (err) {
-      Alert.alert("Unable to unsave item", err instanceof Error ? err.message : "Please try again.");
-    } finally {
-      setUnsavingListingId(null);
+      Alert.alert("Unable to update saved item", err instanceof Error ? err.message : "Please try again.");
     }
+  };
+
+  const handleOpenListing = (listing: Listing) => {
+    router.push({
+      pathname: "/(tabs)/(market)",
+      params: { listingId: listing._id },
+    });
   };
 
   const emptyState = (
     <View style={styles.emptyState}>
-      <Ionicons name="bookmark-outline" size={40} color={appColors.textPlaceholder} />
+      <Ionicons name="heart-outline" size={40} color={appColors.textPlaceholder} />
       <Text style={styles.emptyTitle}>No saved items yet</Text>
-      <Text style={styles.emptyBody}>
-        Save listings from the marketplace and they will show up here.
-      </Text>
+      <Text style={styles.emptyBody}>Items you save will appear here.</Text>
       <Pressable style={styles.exploreButton} onPress={() => router.replace("/(tabs)/(market)")}>
         <Ionicons name="search-outline" size={16} color={appColors.textOnPrimary} />
         <Text style={styles.exploreButtonText}>Explore Listings</Text>
@@ -72,16 +57,22 @@ export default function SavedItemsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Pressable style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={18} color={appColors.textPrimary} />
-        </Pressable>
+        {router.canGoBack() ? (
+          <Pressable style={styles.backButton} onPress={() => router.back()}>
+            <Ionicons name="chevron-back" size={18} color={appColors.textPrimary} />
+          </Pressable>
+        ) : (
+          <View style={styles.backButtonPlaceholder}>
+            <Ionicons name="heart" size={18} color={appColors.primary} />
+          </View>
+        )}
         <View style={styles.headerTextWrap}>
-          <Text style={styles.title}>Saved Items</Text>
+          <Text style={styles.title}>Saved</Text>
           <Text style={styles.subtitle}>
             {savedListings.length} saved {savedListings.length === 1 ? "listing" : "listings"}
           </Text>
         </View>
-        <Pressable style={styles.refreshButton} onPress={loadSavedItems}>
+        <Pressable style={styles.refreshButton} onPress={refreshSavedListings}>
           <Ionicons name="refresh-outline" size={18} color={appColors.primary} />
         </Pressable>
       </View>
@@ -98,49 +89,25 @@ export default function SavedItemsScreen() {
           <View style={styles.centerState}>
             <Text style={styles.errorTitle}>Could not load saved items</Text>
             <Text style={styles.errorBody}>{error}</Text>
-            <Pressable style={styles.retryButton} onPress={loadSavedItems}>
+            <Pressable style={styles.retryButton} onPress={refreshSavedListings}>
               <Text style={styles.retryButtonText}>Retry</Text>
             </Pressable>
           </View>
         ) : null}
 
         {!isLoading && !error ? (
-          <FlatList
-            data={savedListings}
-            keyExtractor={(item) => item._id}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={[
-              styles.listContent,
-              savedListings.length === 0 && styles.listContentEmpty,
-            ]}
-            ListEmptyComponent={emptyState}
-            renderItem={({ item }) => {
-              const isUnsaving = unsavingListingId === item._id;
-              return (
-                <View style={styles.savedItemBlock}>
-                  <ListingCard
-                    listing={item}
-                    userEmail={user?.email}
-                    onPress={() => {}}
-                  />
-                  <Pressable
-                    style={[styles.unsaveButton, isUnsaving && styles.unsaveButtonDisabled]}
-                    onPress={() => handleUnsave(item._id)}
-                    disabled={isUnsaving}
-                  >
-                    {isUnsaving ? (
-                      <ActivityIndicator size="small" color={appColors.primary} />
-                    ) : (
-                      <Ionicons name="bookmark" size={15} color={appColors.primary} />
-                    )}
-                    <Text style={styles.unsaveButtonText}>
-                      {isUnsaving ? "Removing..." : "Unsave"}
-                    </Text>
-                  </Pressable>
-                </View>
-              );
-            }}
-          />
+          savedListings.length > 0 ? (
+            <ListingList
+              data={savedListings}
+              userEmail={user?.email}
+              onPressListing={handleOpenListing}
+              isListingSaved={isListingSaved}
+              isSavePending={isSavePending}
+              onToggleSaveListing={handleToggleSave}
+            />
+          ) : (
+            emptyState
+          )
         ) : null}
       </View>
     </SafeAreaView>
@@ -169,6 +136,16 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.surfaceSoft,
     borderWidth: 1,
     borderColor: appColors.borderSoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  backButtonPlaceholder: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: appColors.primarySoft,
+    borderWidth: 1,
+    borderColor: appColors.primaryBorder,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -201,15 +178,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     paddingTop: 14,
-  },
-  listContent: {
-    paddingBottom: 20,
-  },
-  listContentEmpty: {
-    flexGrow: 1,
-  },
-  savedItemBlock: {
-    marginBottom: 6,
   },
   centerState: {
     flex: 1,
@@ -249,10 +217,10 @@ const styles = StyleSheet.create({
     color: appColors.textOnPrimary,
   },
   emptyState: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 24,
-    paddingTop: 60,
   },
   emptyTitle: {
     marginTop: 14,
@@ -282,28 +250,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     color: appColors.textOnPrimary,
-  },
-  unsaveButton: {
-    marginTop: -4,
-    marginBottom: 12,
-    alignSelf: "flex-end",
-    minHeight: 34,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: appColors.primaryBorder,
-    backgroundColor: appColors.primarySoft,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 12,
-    gap: 6,
-  },
-  unsaveButtonDisabled: {
-    opacity: 0.75,
-  },
-  unsaveButtonText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: appColors.primary,
   },
 });

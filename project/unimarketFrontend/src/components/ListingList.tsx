@@ -10,6 +10,9 @@ interface ListingListProps {
   onPressListing?: (listing: Listing) => void;
   userEmail?: string;
   onDeleteListing?: () => void;
+  isListingSaved?: (listingId: string) => boolean;
+  onToggleSaveListing?: (listing: Listing) => void;
+  isSavePending?: (listingId: string) => boolean;
   singleItemMode?: "grid" | "featured";
   listFooter?: React.ReactElement | null;
 }
@@ -19,6 +22,9 @@ export const ListingList: React.FC<ListingListProps> = ({
   onPressListing,
   userEmail,
   onDeleteListing,
+  isListingSaved,
+  onToggleSaveListing,
+  isSavePending,
   singleItemMode = "grid",
   listFooter = null,
 }) => {
@@ -49,6 +55,9 @@ export const ListingList: React.FC<ListingListProps> = ({
             onPress={onPressListing ? () => onPressListing(item) : undefined}
             userEmail={userEmail}
             onDelete={onDeleteListing}
+            isSaved={isListingSaved ? isListingSaved(item._id) : false}
+            onToggleSave={onToggleSaveListing ? () => onToggleSaveListing(item) : undefined}
+            savePending={isSavePending ? isSavePending(item._id) : false}
             featured={featuredSingle}
           />
         </View>
@@ -97,4 +106,3 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 });
-

@@ -1,6 +1,11 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { upsertUserProfile } from "../services/api";
+import {
+  CAMPUS_EMAIL_ERROR_MESSAGE,
+  isValidCampusEmail,
+  normalizeEmail,
+} from "../utils/emailValidation";
 
 type User = {
   name: string;
@@ -27,7 +32,6 @@ type UserContextValue = {
 const UserContext = createContext<UserContextValue | undefined>(undefined);
 const USER_STORAGE_KEY = "unimarket_user";
 const ACCOUNTS_STORAGE_KEY = "unimarket_accounts";
-const normalizeEmail = (value: string) => value.trim().toLowerCase();
 
 export const useUser = () => {
   const ctx = useContext(UserContext);
@@ -114,8 +118,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!name || !email || !password) {
       throw new Error("Name, school email, and password are required.");
     }
-    if (!email.endsWith(".edu")) {
-      throw new Error("Please use your school email (.edu).");
+    if (!isValidCampusEmail(email)) {
+      throw new Error(CAMPUS_EMAIL_ERROR_MESSAGE);
     }
 
     const accounts = await getAccounts();
@@ -137,6 +141,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const password = input.password;
     if (!email || !password) {
       throw new Error("Email and password are required.");
+    }
+    if (!isValidCampusEmail(email)) {
+      throw new Error(CAMPUS_EMAIL_ERROR_MESSAGE);
     }
 
     const accounts = await getAccounts();

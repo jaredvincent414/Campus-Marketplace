@@ -1,20 +1,15 @@
 // Market tab - main marketplace feed with search
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
-  View, Text, StyleSheet, SafeAreaView, Modal, Pressable, Alert, ScrollView, Image, Linking, Dimensions,
+  View, Text, StyleSheet, SafeAreaView, Modal, Pressable, Alert, ScrollView, Image, Linking, Dimensions, ActivityIndicator,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useListings } from "../../../src/contexts/ListingsContext";
 import { useUser } from "../../../src/contexts/UserContext";
+import { useSavedListings } from "../../../src/contexts/SavedListingsContext";
 import { SearchBar } from "../../../src/components/SearchBar";
 import { ListingList } from "../../../src/components/ListingList";
-import {
-  fetchUserProfile,
-  normalizeMediaUrl,
-  purchaseListing,
-  removeSavedListingForUser,
-  saveListingForUser,
-} from "../../../src/services/api";
+import { normalizeMediaUrl, purchaseListing } from "../../../src/services/api";
 import { Listing } from "../../../src/types";
 import { useCreateOrOpenConversation } from "../../../src/hooks/useCreateOrOpenConversation";
 import { Ionicons } from "@expo/vector-icons";
@@ -37,15 +32,16 @@ const MODAL_IMAGE_WIDTH = Dimensions.get("window").width;
 
 export default function MarketScreen() {
   const router = useRouter();
+  const { listingId } = useLocalSearchParams<{ listingId?: string }>();
   const { listings, loadListings } = useListings();
   const { user } = useUser();
+  const { isListingSaved, isSavePending, toggleSavedListing } = useSavedListings();
   const { openConversation, isLoading: openingConversation } = useCreateOrOpenConversation();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [savedListingIds, setSavedListingIds] = useState<string[]>([]);
-  const [savingListingId, setSavingListingId] = useState<string | null>(null);
+  const requestedListingId = typeof listingId === "string" ? listingId.trim() : "";
 
   useEffect(() => {
     if (listings.length === 0) {
@@ -54,30 +50,22 @@ export default function MarketScreen() {
   }, []);
 
   useEffect(() => {
-    let mounted = true;
-    const loadSavedState = async () => {
-      if (!user?.email) {
-        if (mounted) setSavedListingIds([]);
-        return;
-      }
+    if (!requestedListingId || selectedListing?._id === requestedListingId) return;
+    const requestedListing = listings.find((listing) => listing._id === requestedListingId);
+    if (requestedListing) {
+      setSelectedListing(requestedListing);
+    }
+  }, [listings, requestedListingId, selectedListing?._id]);
 
-      try {
-        const profile = await fetchUserProfile(user.email);
-        if (mounted) {
-          setSavedListingIds(profile.savedListingIds || []);
-        }
-      } catch {
-        if (mounted) {
-          setSavedListingIds([]);
-        }
-      }
-    };
+  const clearRequestedListingParam = useCallback(() => {
+    if (!requestedListingId) return;
+    router.setParams({ listingId: "" });
+  }, [requestedListingId, router]);
 
-    loadSavedState();
-    return () => {
-      mounted = false;
-    };
-  }, [user?.email]);
+  const handleCloseListingModal = useCallback(() => {
+    setSelectedListing(null);
+    clearRequestedListingParam();
+  }, [clearRequestedListingParam]);
 
   const filteredListings = listings.filter((listing) => {
     const matchesSearch = listing.title.toLowerCase().includes(searchTerm.toLowerCase());
@@ -109,7 +97,7 @@ export default function MarketScreen() {
       Alert.alert(
         "Purchase Successful!",
         `You bought "${selectedListing.title}" for $${selectedListing.price.toFixed(2)}`,
-        [{ text: "OK", onPress: () => { setSelectedListing(null); loadListings(); } }]
+        [{ text: "OK", onPress: () => { handleCloseListingModal(); loadListings(); } }]
       );
     } catch (error) {
       Alert.alert("Error", error instanceof Error ? error.message : "Failed to complete purchase");
@@ -130,7 +118,7 @@ export default function MarketScreen() {
 
     try {
       const conversation = await openConversation(selectedListing._id, user.email);
-      setSelectedListing(null);
+      handleCloseListingModal();
       router.push({
         pathname: "/(tabs)/(messages)/[conversationId]",
         params: { conversationId: conversation.id },
@@ -140,30 +128,22 @@ export default function MarketScreen() {
     }
   };
 
-  const handleToggleSavedListing = async () => {
-    if (!selectedListing) return;
+  const handleToggleSavedListing = async (listing: Listing) => {
     if (!user?.email) {
       Alert.alert("Profile required", "Please sign in before saving listings.");
       return;
     }
 
-    const isOwnListing = selectedListing.userEmail.toLowerCase() === user.email.toLowerCase();
+    const isOwnListing = listing.userEmail.toLowerCase() === user.email.toLowerCase();
     if (isOwnListing) {
       Alert.alert("Not allowed", "You cannot save your own listing.");
       return;
     }
 
-    const listingId = selectedListing._id;
     try {
-      setSavingListingId(listingId);
-      const profile = savedListingIds.includes(listingId)
-        ? await removeSavedListingForUser(user.email, listingId)
-        : await saveListingForUser(user.email, listingId);
-      setSavedListingIds(profile.savedListingIds || []);
+      await toggleSavedListing(listing);
     } catch (error) {
       Alert.alert("Unable to update saved items", error instanceof Error ? error.message : "Please try again.");
-    } finally {
-      setSavingListingId(null);
     }
   };
 
@@ -186,8 +166,8 @@ export default function MarketScreen() {
     selectedListing.userEmail.toLowerCase() === user.email.toLowerCase()
   );
   const selectedMedia = selectedListing?.media || [];
-  const selectedIsSaved = Boolean(selectedListing?._id && savedListingIds.includes(selectedListing._id));
-  const isSavingSelectedListing = Boolean(selectedListing?._id && savingListingId === selectedListing._id);
+  const selectedIsSaved = isListingSaved(selectedListing?._id);
+  const isSavingSelectedListing = isSavePending(selectedListing?._id);
   const selectedImageUrls = Array.from(new Set(
     [
       normalizeMediaUrl(selectedListing?.imageUrl),
@@ -268,6 +248,10 @@ export default function MarketScreen() {
         <ListingList
           data={filteredListings}
           onPressListing={setSelectedListing}
+          userEmail={user?.email}
+          isListingSaved={isListingSaved}
+          isSavePending={isSavePending}
+          onToggleSaveListing={handleToggleSavedListing}
           singleItemMode="featured"
           listFooter={singleListingFooter}
         />
@@ -278,7 +262,7 @@ export default function MarketScreen() {
         visible={selectedListing !== null}
         transparent
         animationType="slide"
-        onRequestClose={() => setSelectedListing(null)}
+        onRequestClose={handleCloseListingModal}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -333,9 +317,35 @@ export default function MarketScreen() {
                     </Pressable>
                   )}
 
-                  <Pressable style={styles.closeButton} onPress={() => setSelectedListing(null)}>
-                    <Ionicons name="close" size={20} color={appColors.textPrimary} />
-                  </Pressable>
+                  <View style={styles.modalTopActions}>
+                    {!selectedIsOwnListing ? (
+                      <Pressable
+                        style={[
+                          styles.modalSaveButton,
+                          selectedIsSaved && styles.modalSaveButtonActive,
+                          isSavingSelectedListing && styles.messageButtonDisabled,
+                        ]}
+                        onPress={() => handleToggleSavedListing(selectedListing)}
+                        disabled={isSavingSelectedListing}
+                      >
+                        {isSavingSelectedListing ? (
+                          <ActivityIndicator
+                            size="small"
+                            color={selectedIsSaved ? appColors.textOnPrimary : appColors.primary}
+                          />
+                        ) : (
+                          <Ionicons
+                            name={selectedIsSaved ? "heart" : "heart-outline"}
+                            size={17}
+                            color={selectedIsSaved ? appColors.textOnPrimary : appColors.textPrimary}
+                          />
+                        )}
+                      </Pressable>
+                    ) : null}
+                    <Pressable style={styles.closeButton} onPress={handleCloseListingModal}>
+                      <Ionicons name="close" size={20} color={appColors.textPrimary} />
+                    </Pressable>
+                  </View>
                 </View>
 
                 <ScrollView style={styles.modalBody}>
@@ -381,29 +391,6 @@ export default function MarketScreen() {
 
                   {!selectedIsOwnListing ? (
                     <>
-                      <Pressable
-                        style={[
-                          styles.saveButton,
-                          selectedIsSaved && styles.saveButtonActive,
-                          isSavingSelectedListing && styles.messageButtonDisabled,
-                        ]}
-                        onPress={handleToggleSavedListing}
-                        disabled={isSavingSelectedListing}
-                      >
-                        <Ionicons
-                          name={selectedIsSaved ? "bookmark" : "bookmark-outline"}
-                          size={16}
-                          color={selectedIsSaved ? appColors.textOnPrimary : appColors.primary}
-                        />
-                        <Text style={[styles.saveButtonText, selectedIsSaved && styles.saveButtonTextActive]}>
-                          {isSavingSelectedListing
-                            ? "Updating..."
-                            : selectedIsSaved
-                              ? "Saved to your profile"
-                              : "Save Item"}
-                        </Text>
-                      </Pressable>
-
                       <Pressable
                         style={[styles.messageButton, openingConversation && styles.messageButtonDisabled]}
                         onPress={handleMessageSeller}
@@ -592,6 +579,15 @@ const styles = StyleSheet.create({
     width: 16,
     backgroundColor: appColors.textOnPrimary,
   },
+  modalTopActions: {
+    position: "absolute",
+    top: 14,
+    right: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    zIndex: 4,
+  },
   closeButton: {
     width: 36,
     height: 36,
@@ -604,7 +600,26 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
-    zIndex: 3,
+    zIndex: 4,
+  },
+  modalSaveButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: appColors.borderSoft,
+    backgroundColor: "rgba(255,255,255,0.94)",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  modalSaveButtonActive: {
+    backgroundColor: appColors.primary,
+    borderColor: appColors.primary,
   },
   modalVideoBadge: {
     position: "absolute",
@@ -681,30 +696,6 @@ const styles = StyleSheet.create({
     color: appColors.primary,
     fontWeight: "600",
   },
-  saveButton: {
-    borderWidth: 1,
-    borderColor: appColors.primaryBorder,
-    backgroundColor: appColors.surface,
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 10,
-  },
-  saveButtonActive: {
-    borderColor: appColors.primary,
-    backgroundColor: appColors.primary,
-  },
-  saveButtonText: {
-    color: appColors.primary,
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  saveButtonTextActive: {
-    color: appColors.textOnPrimary,
-  },
   buyButton: {
     backgroundColor: appColors.primary,
     borderRadius: 12,
@@ -712,9 +703,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 8,
     marginBottom: 32,
-  },
-  buyButtonDisabled: {
-    backgroundColor: appColors.primaryDisabled,
   },
   buyButtonText: {
     color: appColors.textOnPrimary,

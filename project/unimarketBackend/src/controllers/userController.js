@@ -1,8 +1,9 @@
 const User = require("../models/User");
 const Listing = require("../models/Listing");
 const mongoose = require("mongoose");
+const { buildMediaUrl, deleteMediaByUrl, uploadBufferToMediaStorage } = require("../utils/mediaStorage");
+const { isValidCampusEmail, normalizeEmail } = require("../utils/emailValidation");
 
-const normalizeEmail = (value = "") => String(value).trim().toLowerCase();
 const isHttpUrl = (value = "") => {
   try {
     const parsed = new URL(String(value).trim());
@@ -29,6 +30,11 @@ const createOrUpdateUser = async (req, res, next) => {
     const normalizedEmail = String(email || "").trim().toLowerCase();
     if (!name || !normalizedEmail) {
       return res.status(400).json({ message: "Name and email are required" });
+    }
+    if (!isValidCampusEmail(normalizedEmail)) {
+      return res.status(400).json({
+        message: "Please enter a valid Brandeis email address ending in @brandeis.edu.",
+      });
     }
 
     let user = await User.findOne({ email: normalizedEmail });
@@ -82,17 +88,29 @@ const getUserByEmail = async (req, res, next) => {
 };
 
 // POST /api/users/upload-photo
-const uploadUserProfilePhoto = async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ message: "Profile photo is required" });
-  }
+const uploadUserProfilePhoto = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "Profile photo is required" });
+    }
 
-  if (!String(req.file.mimetype || "").startsWith("image/")) {
-    return res.status(400).json({ message: "Only image files are allowed for profile photos" });
-  }
+    if (!String(req.file.mimetype || "").startsWith("image/")) {
+      return res.status(400).json({ message: "Only image files are allowed for profile photos" });
+    }
 
-  const mediaUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
-  return res.status(201).json({ url: mediaUrl });
+    const mediaId = await uploadBufferToMediaStorage({
+      buffer: req.file.buffer,
+      mimeType: req.file.mimetype,
+      originalName: req.file.originalname,
+      metadata: {
+        domain: "profile",
+      },
+    });
+    const mediaUrl = buildMediaUrl(req, mediaId);
+    return res.status(201).json({ url: mediaUrl });
+  } catch (err) {
+    return next(err);
+  }
 };
 
 // PUT /api/users/:email/profile-photo
@@ -112,8 +130,12 @@ const updateUserProfilePhoto = async (req, res, next) => {
       return res.status(404).json({ message: "User not found" });
     }
 
+    const previousPhotoUrl = String(user.profileImageUrl || "").trim();
     user.profileImageUrl = profileImageUrl;
     await user.save();
+    if (previousPhotoUrl && previousPhotoUrl !== profileImageUrl) {
+      await deleteMediaByUrl(previousPhotoUrl);
+    }
     return res.json(normalizeUserPayload(user));
   } catch (err) {
     next(err);
