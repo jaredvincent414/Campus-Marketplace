@@ -137,6 +137,30 @@ export default function CreateListingScreen() {
     setMediaItems((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const promptMediaSource = (type: ListingMedia["type"]) =>
+    new Promise<"library" | "camera" | null>((resolve) => {
+      let settled = false;
+      const finish = (choice: "library" | "camera" | null) => {
+        if (settled) return;
+        settled = true;
+        resolve(choice);
+      };
+      const isVideo = type === "video";
+
+      Alert.alert(
+        isVideo ? "Add video" : "Add photo",
+        isVideo
+          ? "Choose an existing video or record one now."
+          : "Choose an existing photo or take one now.",
+        [
+          { text: isVideo ? "Record Video" : "Use Camera", onPress: () => finish("camera") },
+          { text: "Choose Existing", onPress: () => finish("library") },
+          { text: "Cancel", style: "cancel", onPress: () => finish(null) },
+        ],
+        { cancelable: true, onDismiss: () => finish(null) }
+      );
+    });
+
   const handlePickMediaFromDevice = async (type: ListingMedia["type"]) => {
     if (mediaItems.length >= MAX_MEDIA_ITEMS) {
       Alert.alert("Media limit reached", `You can add up to ${MAX_MEDIA_ITEMS} files.`);
@@ -144,23 +168,42 @@ export default function CreateListingScreen() {
     }
 
     try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      const source = await promptMediaSource(type);
+      if (!source) return;
+
+      const permission =
+        source === "camera"
+          ? await ImagePicker.requestCameraPermissionsAsync()
+          : await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (permission.status !== "granted") {
-        Alert.alert("Permission Denied", "Media library access is needed to select files.");
+        Alert.alert(
+          "Permission Denied",
+          source === "camera"
+            ? "Camera access is needed to capture media."
+            : "Media library access is needed to select files."
+        );
         return;
       }
 
       const remainingSlots = MAX_MEDIA_ITEMS - mediaItems.length;
-      const picked = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes:
-          type === "video"
-            ? ImagePicker.MediaTypeOptions.Videos
-            : ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: false,
-        allowsMultipleSelection: type === "image",
-        selectionLimit: type === "image" ? remainingSlots : 1,
-        quality: 0.75,
-      });
+      const mediaTypes =
+        type === "video"
+          ? ImagePicker.MediaTypeOptions.Videos
+          : ImagePicker.MediaTypeOptions.Images;
+      const picked =
+        source === "camera"
+          ? await ImagePicker.launchCameraAsync({
+              mediaTypes,
+              allowsEditing: false,
+              quality: 0.75,
+            })
+          : await ImagePicker.launchImageLibraryAsync({
+              mediaTypes,
+              allowsEditing: false,
+              allowsMultipleSelection: type === "image",
+              selectionLimit: type === "image" ? remainingSlots : 1,
+              quality: 0.75,
+            });
 
       if (picked.canceled || !picked.assets?.length) {
         return;
@@ -168,7 +211,7 @@ export default function CreateListingScreen() {
 
       setUploadingType(type);
       const assetsToUpload =
-        type === "image"
+        type === "image" && source === "library"
           ? picked.assets.slice(0, remainingSlots)
           : picked.assets.slice(0, 1);
 
@@ -402,7 +445,7 @@ export default function CreateListingScreen() {
             <Text style={styles.photoUploadSubtitle}>
               {imageEntries.length > 0
                 ? `${imageEntries.length} ${imageEntries.length === 1 ? "photo" : "photos"} attached`
-                : "Show multiple angles and important details."}
+                : "Choose from library or take photos now."}
             </Text>
           </Pressable>
 

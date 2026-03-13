@@ -48,6 +48,27 @@ export default function ProfileScreen() {
     }, [loadProfile])
   );
 
+  const promptProfilePhotoSource = () =>
+    new Promise<"library" | "camera" | null>((resolve) => {
+      let settled = false;
+      const finish = (choice: "library" | "camera" | null) => {
+        if (settled) return;
+        settled = true;
+        resolve(choice);
+      };
+
+      Alert.alert(
+        "Update profile photo",
+        "Choose an existing photo or take one now.",
+        [
+          { text: "Use Camera", onPress: () => finish("camera") },
+          { text: "Choose Existing", onPress: () => finish("library") },
+          { text: "Cancel", style: "cancel", onPress: () => finish(null) },
+        ],
+        { cancelable: true, onDismiss: () => finish(null) }
+      );
+    });
+
   const handleChangeProfilePhoto = async () => {
     if (!user?.email) {
       Alert.alert("Profile required", "Please sign in first.");
@@ -55,18 +76,35 @@ export default function ProfileScreen() {
     }
 
     try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (permission.status !== "granted") {
-        Alert.alert("Permission denied", "Photo library access is required to pick a profile photo.");
+      const source = await promptProfilePhotoSource();
+      if (!source) {
         return;
       }
 
-      const picked = await ImagePicker.launchImageLibraryAsync({
+      const permission =
+        source === "camera"
+          ? await ImagePicker.requestCameraPermissionsAsync()
+          : await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (permission.status !== "granted") {
+        Alert.alert(
+          "Permission denied",
+          source === "camera"
+            ? "Camera access is required to take a profile photo."
+            : "Photo library access is required to pick a profile photo."
+        );
+        return;
+      }
+
+      const pickOptions: ImagePicker.ImagePickerOptions = {
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         quality: 0.8,
         aspect: [1, 1],
-      });
+      };
+      const picked =
+        source === "camera"
+          ? await ImagePicker.launchCameraAsync(pickOptions)
+          : await ImagePicker.launchImageLibraryAsync(pickOptions);
       if (picked.canceled || !picked.assets?.[0]?.uri) {
         return;
       }
