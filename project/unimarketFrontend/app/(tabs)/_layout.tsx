@@ -74,7 +74,7 @@ export default function TabsLayout() {
         options={{
           title: "My Listings",
           tabBarIcon: ({ color, size, focused }) => (
-            renderTabIcon("heart-outline", color, size, focused)
+            renderTabIcon("pricetag-outline", color, size, focused)
           ),
         }}
       />
@@ -92,7 +92,7 @@ export default function TabsLayout() {
         options={{
           title: "Saved",
           tabBarIcon: ({ color, size, focused }) => (
-            renderTabIcon("heart-outline", color, size, focused)
+            renderTabIcon("bookmark-outline", color, size, focused)
           ),
         }}
       />

@@ -99,15 +99,16 @@ export default function ProfileScreen() {
     : "?";
   const isVerifiedStudent = Boolean(user?.email?.toLowerCase().endsWith(".edu"));
   const savedCount = profile?.savedListingIds?.length || 0;
+  const purchasesCount = profile?.purchasesCount || 0;
 
   const stats = useMemo(
     () => [
       { label: "Listings", value: isLoading ? "..." : String(userListings.length) },
       { label: "Saved", value: loadingProfile ? "..." : String(savedCount) },
-      { label: "Purchases", value: "0" },
+      { label: "Purchases", value: loadingProfile ? "..." : String(purchasesCount) },
       { label: "Rating", value: "New" },
     ],
-    [isLoading, userListings.length, loadingProfile, savedCount]
+    [isLoading, userListings.length, loadingProfile, purchasesCount, savedCount]
   );
 
   const quickActions = [
@@ -117,13 +118,6 @@ export default function ProfileScreen() {
       subtitle: "Manage your items",
       icon: "pricetag-outline",
       onPress: () => router.push("/(tabs)/(my-listings)"),
-    },
-    {
-      key: "saved",
-      label: "Saved Items",
-      subtitle: savedCount > 0 ? `${savedCount} saved item${savedCount === 1 ? "" : "s"}` : "View favorites",
-      icon: "bookmark-outline",
-      onPress: () => router.push("/(tabs)/(profile)/saved-items"),
     },
     {
       key: "messages",

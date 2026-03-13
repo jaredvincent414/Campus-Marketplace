@@ -44,6 +44,9 @@ const normalizeUserProfile = (raw: any): UserProfile => ({
   savedListingIds: Array.isArray(raw?.savedListingIds)
     ? raw.savedListingIds.map((id: unknown) => String(id))
     : [],
+  purchasesCount: Number.isFinite(Number(raw?.purchasesCount))
+    ? Number(raw.purchasesCount)
+    : 0,
   createdAt: raw?.createdAt,
   updatedAt: raw?.updatedAt,
 });

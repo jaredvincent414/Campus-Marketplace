@@ -30,6 +30,7 @@ export interface UserProfile {
   email: string;
   profileImageUrl?: string;
   savedListingIds: string[];
+  purchasesCount?: number;
   createdAt?: string;
   updatedAt?: string;
 }
