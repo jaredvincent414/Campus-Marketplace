@@ -1,8 +1,9 @@
 // Market tab - main marketplace feed with search
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
-  View, Text, StyleSheet, SafeAreaView, Modal, Pressable, Alert, ScrollView, Image, Linking, Dimensions, ActivityIndicator, Animated, Easing,
+  View, Text, StyleSheet, Modal, Pressable, Alert, ScrollView, Image, Linking, Dimensions, ActivityIndicator, Animated, Easing,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useListings } from "../../../src/contexts/ListingsContext";
 import { useUser } from "../../../src/contexts/UserContext";
@@ -30,6 +31,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 const HORIZONTAL_PADDING = 20;
 const BRAND_COLOR = appColors.primary;
 const MODAL_IMAGE_WIDTH = Dimensions.get("window").width;
+const BRANDEIS_LOGO_URI = "https://upload.wikimedia.org/wikipedia/en/thumb/c/c8/Brandeis_University_seal.svg/240px-Brandeis_University_seal.svg.png";
 const HEADER_EXPANDED_HEIGHT = 266;
 const HEADER_COLLAPSED_HEIGHT = 190;
 const HEADER_SCROLL_DISTANCE = HEADER_EXPANDED_HEIGHT - HEADER_COLLAPSED_HEIGHT;
@@ -49,6 +51,7 @@ export default function MarketScreen() {
   const scrollY = useRef(new Animated.Value(0)).current;
   const titleIntro = useRef(new Animated.Value(0)).current;
   const subtitleIntro = useRef(new Animated.Value(0)).current;
+  const subtitleAmbient = useRef(new Animated.Value(0)).current;
   const searchIntro = useRef(new Animated.Value(0)).current;
   const chipsIntro = useRef(new Animated.Value(0)).current;
   const chipSelectionValues = useRef<Record<string, Animated.Value>>(
@@ -84,6 +87,14 @@ export default function MarketScreen() {
   const subtitleLift = collapseProgress.interpolate({
     inputRange: [0, 1],
     outputRange: [0, -9],
+  });
+  const subtitleAmbientOpacity = subtitleAmbient.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 0.9],
+  });
+  const subtitleAmbientLift = subtitleAmbient.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -2],
   });
   const chipsLift = collapseProgress.interpolate({
     inputRange: [0, 1],
@@ -154,29 +165,53 @@ export default function MarketScreen() {
         toValue: 1,
         duration: 260,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
       Animated.timing(subtitleIntro, {
         toValue: 1,
         duration: 230,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
       Animated.timing(searchIntro, {
         toValue: 1,
         duration: 230,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
       Animated.timing(chipsIntro, {
         toValue: 1,
         duration: 230,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
     ]);
     introSequence.start();
   }, []);
+
+  useEffect(() => {
+    const subtitleLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(subtitleAmbient, {
+          toValue: 1,
+          duration: 1700,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: false,
+        }),
+        Animated.timing(subtitleAmbient, {
+          toValue: 0,
+          duration: 1700,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: false,
+        }),
+      ])
+    );
+
+    subtitleLoop.start();
+    return () => {
+      subtitleLoop.stop();
+    };
+  }, [subtitleAmbient]);
 
   useEffect(() => {
     const id = scrollY.addListener(({ value }) => {
@@ -195,7 +230,7 @@ export default function MarketScreen() {
         toValue: category === selectedCategory ? 1 : 0,
         duration: 180,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
+        useNativeDriver: false,
       })
     );
     Animated.parallel(animations).start();
@@ -379,10 +414,15 @@ export default function MarketScreen() {
                 },
               ]}
             >
-              UniMarket
+              <Text style={styles.headerTitleLead}>Uni</Text>
+              <Text style={styles.headerTitleAccent}>Market</Text>
             </Animated.Text>
             <Animated.View style={[styles.brandBadge, { opacity: headerBadgeOpacity }]}>
-              <Ionicons name="school-outline" size={12} color={appColors.primary} />
+              <Image
+                source={{ uri: BRANDEIS_LOGO_URI }}
+                style={styles.brandLogo}
+                resizeMode="cover"
+              />
               <Text style={styles.brandBadgeText}>Brandeis</Text>
             </Animated.View>
           </Animated.View>
@@ -391,12 +431,22 @@ export default function MarketScreen() {
             style={[
               styles.headerSubtitle,
               {
-                opacity: Animated.multiply(subtitleIntro, subtitleFade),
-                transform: [{ translateY: Animated.add(subtitleIntroLift, subtitleLift) }],
+                opacity: Animated.multiply(
+                  Animated.multiply(subtitleIntro, subtitleFade),
+                  subtitleAmbientOpacity
+                ),
+                transform: [
+                  {
+                    translateY: Animated.add(
+                      Animated.add(subtitleIntroLift, subtitleLift),
+                      subtitleAmbientLift
+                    ),
+                  },
+                ],
               },
             ]}
           >
-            Find great deals on campus
+            Discover student deals around campus.
           </Animated.Text>
 
           <Animated.View
@@ -722,30 +772,47 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 33,
     fontWeight: "800",
-    color: appColors.textPrimary,
     letterSpacing: -0.8,
+  },
+  headerTitleLead: {
+    color: appColors.textPrimary,
+  },
+  headerTitleAccent: {
+    color: appColors.primaryDark,
   },
   brandBadge: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
+    gap: 7,
     backgroundColor: appColors.primarySoft,
     borderWidth: 1,
     borderColor: appColors.primaryBorder,
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginTop: 2,
+  },
+  brandLogo: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 1,
+    borderColor: appColors.primaryBorder,
+    backgroundColor: appColors.surface,
   },
   brandBadgeText: {
     color: appColors.primary,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: "700",
+    letterSpacing: 0.2,
   },
   headerSubtitle: {
-    marginTop: 5,
+    marginTop: 8,
+    maxWidth: "82%",
     fontSize: 13,
-    color: appColors.textSecondary,
-    fontWeight: "500",
+    lineHeight: 18,
+    color: appColors.textMuted,
+    fontWeight: "600",
   },
   searchContainer: {
     marginTop: 14,

@@ -1,8 +1,9 @@
 // Profile tab - redesigned profile hub
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, Pressable, Alert, Image, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Image, ActivityIndicator } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useUser } from "../../../src/contexts/UserContext";
 import { useListings } from "../../../src/contexts/ListingsContext";
 import { fetchUserProfile, saveUserProfilePhoto, uploadUserProfilePhoto } from "../../../src/services/api";

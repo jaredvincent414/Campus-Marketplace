@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import {
-  SafeAreaView,
   View,
   Text,
   StyleSheet,
@@ -12,6 +11,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useUser } from "../../src/contexts/UserContext";
 import { DecorativeBackground } from "../../src/components/auth/DecorativeBackground";
 import { AuthCard } from "../../src/components/auth/AuthCard";
