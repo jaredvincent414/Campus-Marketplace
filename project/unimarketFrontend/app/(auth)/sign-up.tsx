@@ -60,6 +60,14 @@ export default function SignUpScreen() {
     }
   };
 
+  const handleBackPress = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace("/(auth)");
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <DecorativeBackground compact />
@@ -69,7 +77,7 @@ export default function SignUpScreen() {
         keyboardVerticalOffset={Platform.OS === "ios" ? 68 : 0}
       >
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-          <Pressable style={styles.backButton} onPress={() => router.back()}>
+          <Pressable style={styles.backButton} onPress={handleBackPress}>
             <Ionicons name="chevron-back" size={20} color="#2C3B77" />
             <Text style={styles.backLabel}>Back</Text>
           </Pressable>

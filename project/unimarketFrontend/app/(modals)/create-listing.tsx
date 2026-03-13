@@ -32,6 +32,14 @@ export default function CreateListingScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [uploadingType, setUploadingType] = useState<ListingMedia["type"] | null>(null);
 
+  const handleClose = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace("/(tabs)/(market)");
+  };
+
   const handleGetLocation = async () => {
     try {
       setLocationLoading(true);
@@ -135,7 +143,7 @@ export default function CreateListingScreen() {
         media: mediaItems,
       });
       addListing(newListing);
-      Alert.alert("Listed!", "Your item is now live.", [{ text: "Done", onPress: () => router.back() }]);
+      Alert.alert("Listed!", "Your item is now live.", [{ text: "Done", onPress: handleClose }]);
     } catch (error) {
       Alert.alert("Error", error instanceof Error ? error.message : "Failed to create listing");
     } finally {
@@ -152,7 +160,7 @@ export default function CreateListingScreen() {
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable onPress={handleClose} style={styles.backButton}>
           <Ionicons name="close" size={24} color={appColors.textPrimary} />
         </Pressable>
         <Text style={styles.headerTitle}>New Listing</Text>

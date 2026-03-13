@@ -46,6 +46,14 @@ export default function ConversationScreen() {
   const [isSending, setIsSending] = useState(false);
   const [isUpdatingListingStatus, setIsUpdatingListingStatus] = useState(false);
 
+  const handleBackPress = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace("/(tabs)/(messages)");
+  };
+
   const {
     messages,
     setMessages,
@@ -285,7 +293,7 @@ export default function ConversationScreen() {
         keyboardVerticalOffset={Platform.OS === "ios" ? 72 : 0}
       >
         <View style={styles.header}>
-          <Pressable style={styles.headerButton} onPress={() => router.back()}>
+          <Pressable style={styles.headerButton} onPress={handleBackPress}>
             <Ionicons name="chevron-back" size={22} color={appColors.textPrimary} />
           </Pressable>
           <View style={styles.headerCenter}>
