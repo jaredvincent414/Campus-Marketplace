@@ -75,7 +75,6 @@ export const ListingCard: React.FC<ListingCardProps> = ({
     ].filter(Boolean) as string[]
   ));
   const primaryImage = imageUrls[0];
-  const imageCount = imageUrls.length;
   const videoCount = media.filter((item) => item.type === "video").length;
   const [imageLoadError, setImageLoadError] = useState(false);
   const hasImage = Boolean(primaryImage) && !imageLoadError;
@@ -139,14 +138,8 @@ export const ListingCard: React.FC<ListingCardProps> = ({
             <Text style={styles.placeholderLabel}>{category}</Text>
           </View>
         )}
-        {(videoCount > 0 || imageCount > 1) && (
+        {videoCount > 0 && (
           <View style={styles.mediaBadges}>
-            {imageCount > 1 && (
-              <View style={styles.mediaBadge}>
-                <Ionicons name="images" size={12} color={appColors.textOnPrimary} />
-                <Text style={styles.mediaBadgeText}>{imageCount}</Text>
-              </View>
-            )}
             {videoCount > 0 && (
               <View style={styles.mediaBadge}>
                 <Ionicons name="videocam" size={12} color={appColors.textOnPrimary} />
