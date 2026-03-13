@@ -84,7 +84,7 @@ export default function ListingDetailsScreen({ route, navigation }) {
     if (loading) {
         return (
             <View style={styles.centerContainer}>
-                <ActivityIndicator size="large" color="#007AFF" />
+                <ActivityIndicator size="large" color="#2F54D7" />
                 <Text style={styles.loadingText}>Loading listing...</Text>
             </View>
         );
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     backButton: {
-        backgroundColor: "#007AFF",
+        backgroundColor: "#2F54D7",
         paddingHorizontal: 20,
         paddingVertical: 10,
         borderRadius: 8,
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     price: {
         fontSize: 28,
         fontWeight: "700",
-        color: "#007AFF",
+        color: "#2F54D7",
     },
     section: {
         backgroundColor: "#fff",
@@ -252,4 +252,3 @@ const styles = StyleSheet.create({
         fontWeight: "600",
     },
 });
-

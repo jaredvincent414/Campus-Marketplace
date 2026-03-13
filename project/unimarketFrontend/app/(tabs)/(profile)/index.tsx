@@ -1,16 +1,22 @@
 // Profile tab - redesigned profile hub
-import React, { useEffect, useMemo } from "react";
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, Pressable, Alert } from "react-native";
-import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, Pressable, Alert, Image, ActivityIndicator } from "react-native";
+import { useFocusEffect, useRouter } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
 import { useUser } from "../../../src/contexts/UserContext";
 import { useListings } from "../../../src/contexts/ListingsContext";
+import { fetchUserProfile, saveUserProfilePhoto, uploadUserProfilePhoto } from "../../../src/services/api";
+import { UserProfile } from "../../../src/types";
 import { Ionicons } from "@expo/vector-icons";
 import { appColors } from "../../../src/theme/colors";
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, signOut } = useUser();
+  const { user, signOut, saveUser } = useUser();
   const { userListings, loadUserListings, isLoading } = useListings();
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   useEffect(() => {
     if (user?.email) {
@@ -18,19 +24,90 @@ export default function ProfileScreen() {
     }
   }, [user?.email]);
 
-  const initials = user?.name
-    ? user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+  const loadProfile = useCallback(async () => {
+    if (!user?.email) {
+      setProfile(null);
+      return;
+    }
+
+    try {
+      setLoadingProfile(true);
+      const userProfile = await fetchUserProfile(user.email);
+      setProfile(userProfile);
+    } catch (error) {
+      console.warn("Unable to load user profile", error);
+    } finally {
+      setLoadingProfile(false);
+    }
+  }, [user?.email]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadProfile();
+    }, [loadProfile])
+  );
+
+  const handleChangeProfilePhoto = async () => {
+    if (!user?.email) {
+      Alert.alert("Profile required", "Please sign in first.");
+      return;
+    }
+
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (permission.status !== "granted") {
+        Alert.alert("Permission denied", "Photo library access is required to pick a profile photo.");
+        return;
+      }
+
+      const picked = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.8,
+        aspect: [1, 1],
+      });
+      if (picked.canceled || !picked.assets?.[0]?.uri) {
+        return;
+      }
+
+      setUploadingPhoto(true);
+      const selectedImage = picked.assets[0];
+      const uploadedUrl = await uploadUserProfilePhoto(
+        selectedImage.uri,
+        selectedImage.mimeType || "image/jpeg"
+      );
+      const updatedProfile = await saveUserProfilePhoto(user.email, uploadedUrl);
+      setProfile(updatedProfile);
+      await saveUser({
+        name: updatedProfile.name || user.name,
+        email: updatedProfile.email || user.email,
+        profileImageUrl: updatedProfile.profileImageUrl,
+        savedListingIds: updatedProfile.savedListingIds,
+      });
+    } catch (error) {
+      Alert.alert(
+        "Unable to update photo",
+        error instanceof Error ? error.message : "Please try again."
+      );
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  const initials = (profile?.name || user?.name)
+    ? (profile?.name || user?.name || "").split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
     : "?";
   const isVerifiedStudent = Boolean(user?.email?.toLowerCase().endsWith(".edu"));
+  const savedCount = profile?.savedListingIds?.length || 0;
 
   const stats = useMemo(
     () => [
       { label: "Listings", value: isLoading ? "..." : String(userListings.length) },
-      { label: "Saved", value: "0" },
+      { label: "Saved", value: loadingProfile ? "..." : String(savedCount) },
       { label: "Purchases", value: "0" },
       { label: "Rating", value: "New" },
     ],
-    [isLoading, userListings.length]
+    [isLoading, userListings.length, loadingProfile, savedCount]
   );
 
   const quickActions = [
@@ -44,9 +121,9 @@ export default function ProfileScreen() {
     {
       key: "saved",
       label: "Saved Items",
-      subtitle: "View favorites",
+      subtitle: savedCount > 0 ? `${savedCount} saved item${savedCount === 1 ? "" : "s"}` : "View favorites",
       icon: "bookmark-outline",
-      onPress: () => Alert.alert("Coming soon", "Saved Items is coming soon."),
+      onPress: () => router.push("/(tabs)/(profile)/saved-items"),
     },
     {
       key: "messages",
@@ -122,12 +199,27 @@ export default function ProfileScreen() {
 
         <View style={styles.summaryCard}>
           <View style={styles.summaryTop}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{initials}</Text>
-            </View>
+            <Pressable style={styles.avatarPressable} onPress={handleChangeProfilePhoto} disabled={uploadingPhoto}>
+              <View style={styles.avatar}>
+                {profile?.profileImageUrl ? (
+                  <Image source={{ uri: profile.profileImageUrl }} style={styles.avatarImage} resizeMode="cover" />
+                ) : (
+                  <Text style={styles.avatarText}>{initials}</Text>
+                )}
+                {uploadingPhoto ? (
+                  <View style={styles.avatarUploadingOverlay}>
+                    <ActivityIndicator size="small" color={appColors.textOnPrimary} />
+                  </View>
+                ) : null}
+              </View>
+              <View style={styles.avatarBadge}>
+                <Ionicons name="camera-outline" size={14} color={appColors.textOnPrimary} />
+              </View>
+            </Pressable>
             <View style={styles.identityBlock}>
-              <Text style={styles.userName}>{user?.name || "Guest User"}</Text>
+              <Text style={styles.userName}>{profile?.name || user?.name || "Guest User"}</Text>
               <Text style={styles.userSecondary}>{user?.email || "Add your email in profile setup"}</Text>
+              <Text style={styles.avatarHint}>Tap avatar to add or change photo</Text>
               <View style={[styles.statusBadge, isVerifiedStudent && styles.statusBadgeVerified]}>
                 <Ionicons
                   name={isVerifiedStudent ? "checkmark-circle" : "school-outline"}
@@ -227,8 +319,11 @@ const styles = StyleSheet.create({
   },
   summaryTop: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     marginBottom: 16,
+  },
+  avatarPressable: {
+    marginRight: 14,
   },
   avatar: {
     width: 84,
@@ -237,12 +332,36 @@ const styles = StyleSheet.create({
     backgroundColor: appColors.primary,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 14,
+    overflow: "hidden",
+    position: "relative",
+  },
+  avatarImage: {
+    width: "100%",
+    height: "100%",
   },
   avatarText: {
     fontSize: 30,
     fontWeight: "700",
     color: appColors.textOnPrimary,
+  },
+  avatarUploadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarBadge: {
+    position: "absolute",
+    right: -2,
+    bottom: -2,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: appColors.primary,
+    borderWidth: 2,
+    borderColor: appColors.surface,
+    alignItems: "center",
+    justifyContent: "center",
   },
   identityBlock: {
     flex: 1,
@@ -256,6 +375,11 @@ const styles = StyleSheet.create({
   userSecondary: {
     fontSize: 14,
     color: appColors.textMuted,
+    marginBottom: 4,
+  },
+  avatarHint: {
+    fontSize: 12,
+    color: appColors.textSubtle,
     marginBottom: 8,
   },
   statusBadge: {

@@ -1,7 +1,7 @@
 // API service for backend communication
 import Constants from "expo-constants";
 import { Platform } from "react-native";
-import { Conversation, Listing, ListingMedia, ListingMediaType, Message } from "../types";
+import { Conversation, Listing, ListingMedia, ListingMediaType, Message, UserProfile } from "../types";
 
 const API_PORT = "5001";
 const EXPO_HOST_URI = (Constants.expoConfig as { hostUri?: string } | null)?.hostUri;
@@ -36,6 +36,18 @@ export const normalizeMediaUrl = (rawUrl?: string | null): string | undefined =>
   return url;
 };
 
+const normalizeUserProfile = (raw: any): UserProfile => ({
+  _id: String(raw?._id || ""),
+  name: String(raw?.name || "").trim(),
+  email: String(raw?.email || "").trim().toLowerCase(),
+  profileImageUrl: normalizeMediaUrl(raw?.profileImageUrl),
+  savedListingIds: Array.isArray(raw?.savedListingIds)
+    ? raw.savedListingIds.map((id: unknown) => String(id))
+    : [],
+  createdAt: raw?.createdAt,
+  updatedAt: raw?.updatedAt,
+});
+
 /**
  * Fetches all listings from the backend
  */
@@ -48,6 +60,209 @@ export const fetchListings = async (): Promise<Listing[]> => {
     return await response.json();
   } catch (error) {
     throw withNetworkHint(error, "Loading listings");
+  }
+};
+
+/**
+ * Create or update a user profile.
+ */
+export const upsertUserProfile = async (input: {
+  name: string;
+  email: string;
+  profileImageUrl?: string;
+}): Promise<UserProfile> => {
+  try {
+    const response = await fetch(`${BASE_URL}/api/users`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(input),
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to save user profile: ${response.statusText}`);
+    }
+    const raw = await response.json();
+    return normalizeUserProfile(raw);
+  } catch (error) {
+    throw withNetworkHint(error, "Saving your profile");
+  }
+};
+
+/**
+ * Fetch a user profile by email.
+ */
+export const fetchUserProfile = async (email: string): Promise<UserProfile> => {
+  try {
+    const response = await fetch(`${BASE_URL}/api/users/${encodeURIComponent(email.trim().toLowerCase())}`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch user profile: ${response.statusText}`);
+    }
+    const raw = await response.json();
+    return normalizeUserProfile(raw);
+  } catch (error) {
+    throw withNetworkHint(error, "Loading your profile");
+  }
+};
+
+/**
+ * Upload a profile image file and return the uploaded URL.
+ */
+export const uploadUserProfilePhoto = async (
+  fileUri: string,
+  mimeType = "image/jpeg"
+): Promise<string> => {
+  try {
+    const filename = fileUri.split("/").pop() || `profile-${Date.now()}.jpg`;
+    const formData = new FormData();
+    formData.append("media", {
+      uri: fileUri,
+      type: mimeType,
+      name: filename,
+    } as any);
+
+    const response = await fetch(`${BASE_URL}/api/users/upload-photo`, {
+      method: "POST",
+      body: formData,
+    });
+    if (!response.ok) {
+      let message = `Failed to upload profile photo: ${response.statusText}`;
+      try {
+        const data = await response.json();
+        if (data?.message) {
+          message = data.message;
+        }
+      } catch {
+        // fallback message above
+      }
+      throw new Error(message);
+    }
+
+    const data = await response.json();
+    const normalizedUrl = normalizeMediaUrl(data?.url);
+    if (!normalizedUrl) {
+      throw new Error("Upload response did not include a valid photo URL");
+    }
+    return normalizedUrl;
+  } catch (error) {
+    throw withNetworkHint(error, "Uploading profile photo");
+  }
+};
+
+/**
+ * Save a profile image URL to a user's profile.
+ */
+export const saveUserProfilePhoto = async (
+  email: string,
+  profileImageUrl: string
+): Promise<UserProfile> => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/api/users/${encodeURIComponent(email.trim().toLowerCase())}/profile-photo`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ profileImageUrl }),
+      }
+    );
+    if (!response.ok) {
+      let message = `Failed to save profile photo: ${response.statusText}`;
+      try {
+        const data = await response.json();
+        if (data?.message) {
+          message = data.message;
+        }
+      } catch {
+        // fallback message above
+      }
+      throw new Error(message);
+    }
+    const raw = await response.json();
+    return normalizeUserProfile(raw);
+  } catch (error) {
+    throw withNetworkHint(error, "Saving profile photo");
+  }
+};
+
+/**
+ * Fetch saved listings for the current user.
+ */
+export const fetchSavedListings = async (email: string): Promise<Listing[]> => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/api/users/${encodeURIComponent(email.trim().toLowerCase())}/saved-listings`
+    );
+    if (!response.ok) {
+      throw new Error(`Failed to fetch saved listings: ${response.statusText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    throw withNetworkHint(error, "Loading saved items");
+  }
+};
+
+/**
+ * Save a listing for a user.
+ */
+export const saveListingForUser = async (email: string, listingId: string): Promise<UserProfile> => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/api/users/${encodeURIComponent(email.trim().toLowerCase())}/saved-listings/${encodeURIComponent(listingId)}`,
+      {
+        method: "POST",
+      }
+    );
+    if (!response.ok) {
+      let message = `Failed to save listing: ${response.statusText}`;
+      try {
+        const data = await response.json();
+        if (data?.message) {
+          message = data.message;
+        }
+      } catch {
+        // fallback message above
+      }
+      throw new Error(message);
+    }
+    const raw = await response.json();
+    return normalizeUserProfile(raw);
+  } catch (error) {
+    throw withNetworkHint(error, "Saving item");
+  }
+};
+
+/**
+ * Remove a saved listing for a user.
+ */
+export const removeSavedListingForUser = async (
+  email: string,
+  listingId: string
+): Promise<UserProfile> => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/api/users/${encodeURIComponent(email.trim().toLowerCase())}/saved-listings/${encodeURIComponent(listingId)}`,
+      {
+        method: "DELETE",
+      }
+    );
+    if (!response.ok) {
+      let message = `Failed to remove saved listing: ${response.statusText}`;
+      try {
+        const data = await response.json();
+        if (data?.message) {
+          message = data.message;
+        }
+      } catch {
+        // fallback message above
+      }
+      throw new Error(message);
+    }
+    const raw = await response.json();
+    return normalizeUserProfile(raw);
+  } catch (error) {
+    throw withNetworkHint(error, "Removing saved item");
   }
 };
 

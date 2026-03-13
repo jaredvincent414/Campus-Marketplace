@@ -1,7 +1,7 @@
 // Tabs layout for main navigation
 import { Tabs, Redirect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { View, StyleSheet, ActivityIndicator } from "react-native";
+import { View, StyleSheet, ActivityIndicator, Image } from "react-native";
 import { useUser } from "../../src/contexts/UserContext";
 import { appColors } from "../../src/theme/colors";
 
@@ -92,8 +92,24 @@ export default function TabsLayout() {
         options={{
           title: "Profile",
           tabBarIcon: ({ color, size, focused }) => (
-            renderTabIcon("person-circle-outline", color, size, focused)
+            <View style={[styles.iconWrap, focused && styles.iconWrapFocused]}>
+              {user?.profileImageUrl ? (
+                <Image
+                  source={{ uri: user.profileImageUrl }}
+                  style={[styles.profileAvatar, focused && styles.profileAvatarFocused]}
+                  resizeMode="cover"
+                />
+              ) : (
+                <Ionicons name="person-circle-outline" size={size} color={color} />
+              )}
+            </View>
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="(profile)/saved-items"
+        options={{
+          href: null,
         }}
       />
     </Tabs>
@@ -110,6 +126,16 @@ const styles = StyleSheet.create({
   },
   iconWrapFocused: {
     backgroundColor: appColors.primarySoft,
+  },
+  profileAvatar: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: appColors.primaryBorderStrong,
+  },
+  profileAvatarFocused: {
+    borderColor: appColors.primary,
   },
   loadingWrap: {
     flex: 1,

@@ -1,5 +1,6 @@
 const Listing = require("../models/Listing");
 const Conversation = require("../models/Conversation");
+const User = require("../models/User");
 /**
  * Applies the listing CRUD operations
  * @param {*} req 
@@ -252,6 +253,7 @@ const deleteListing = async (req, res) => {
 
         listing.status = "deleted";
         await listing.save();
+        await User.updateMany({}, { $pull: { savedListingIds: listing._id } });
         await syncListingStatusToConversations(req, listing);
         res.json({ message: "Listing deleted" });
     } catch (err) {
