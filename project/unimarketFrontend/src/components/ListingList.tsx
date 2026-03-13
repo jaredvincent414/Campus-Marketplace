@@ -1,6 +1,15 @@
 // List component for displaying multiple listings
 import React from "react";
-import { View, Text, FlatList, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  FlatList,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  StyleProp,
+  StyleSheet,
+  ViewStyle,
+} from "react-native";
 import { Listing } from "../types";
 import { ListingCard } from "./ListingCard";
 import { appColors } from "../theme/colors";
@@ -15,6 +24,9 @@ interface ListingListProps {
   isSavePending?: (listingId: string) => boolean;
   singleItemMode?: "grid" | "featured";
   listFooter?: React.ReactElement | null;
+  onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
+  scrollEventThrottle?: number;
+  listContentContainerStyle?: StyleProp<ViewStyle>;
 }
 
 export const ListingList: React.FC<ListingListProps> = ({
@@ -27,6 +39,9 @@ export const ListingList: React.FC<ListingListProps> = ({
   isSavePending,
   singleItemMode = "grid",
   listFooter = null,
+  onScroll,
+  scrollEventThrottle = 16,
+  listContentContainerStyle,
 }) => {
   if (data.length === 0) {
     return (
@@ -62,9 +77,11 @@ export const ListingList: React.FC<ListingListProps> = ({
           />
         </View>
       )}
-      contentContainerStyle={styles.listContainer}
+      onScroll={onScroll}
+      scrollEventThrottle={scrollEventThrottle}
       showsVerticalScrollIndicator={false}
       ListFooterComponent={listFooter}
+      contentContainerStyle={[styles.listContainer, listContentContainerStyle]}
     />
   );
 };
