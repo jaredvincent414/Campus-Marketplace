@@ -18,6 +18,7 @@ node_modules/
 dist/
 build/
 web-build/
+project/unimarketBackend/uploads/
 
 # Expo
 .expo/
@@ -36,4 +37,3 @@ web-build/
 
 # Yarn
 yarn.lock
-

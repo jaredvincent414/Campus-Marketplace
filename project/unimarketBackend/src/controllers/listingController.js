@@ -1,6 +1,7 @@
 const Listing = require("../models/Listing");
 const Conversation = require("../models/Conversation");
 const User = require("../models/User");
+const { buildMediaUrl, uploadBufferToMediaStorage } = require("../utils/mediaStorage");
 /**
  * Applies the listing CRUD operations
  * @param {*} req 
@@ -133,14 +134,27 @@ const createListing = async (req, res) => {
 };
 
 // POST /api/listings/upload
-const uploadListingMedia = (req, res) => {
-    if (!req.file) {
-        return res.status(400).json({ message: "Media file is required" });
-    }
+const uploadListingMedia = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: "Media file is required" });
+        }
 
-    const mediaUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
-    const mediaType = String(req.file.mimetype || "").startsWith("video/") ? "video" : "image";
-    res.status(201).json({ url: mediaUrl, type: mediaType });
+        const mediaType = String(req.file.mimetype || "").startsWith("video/") ? "video" : "image";
+        const mediaId = await uploadBufferToMediaStorage({
+            buffer: req.file.buffer,
+            mimeType: req.file.mimetype,
+            originalName: req.file.originalname,
+            metadata: {
+                domain: "listing",
+                mediaType,
+            },
+        });
+        const mediaUrl = buildMediaUrl(req, mediaId);
+        return res.status(201).json({ url: mediaUrl, type: mediaType });
+    } catch (err) {
+        return res.status(500).json({ message: err.message || "Media upload failed" });
+    }
 };
 
 // POST /api/listings/:id/purchase

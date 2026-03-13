@@ -9,6 +9,7 @@ const connectDB = require("./config/db");
 const listingRoutes = require("./routes/listingRoutes");
 const messagingRoutes = require("./routes/messagingRoutes");
 const userRoutes = require("./routes/userRoutes");
+const mediaRoutes = require("./routes/mediaRoutes");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 
 dotenv.config();
@@ -20,9 +21,11 @@ const normalizeEmail = (email = "") => String(email).trim().toLowerCase();
 app.use(cors());
 app.use(express.json());
 
-const uploadsDir = path.join(__dirname, "../uploads");
-fs.mkdirSync(uploadsDir, { recursive: true });
-app.use("/uploads", express.static(uploadsDir));
+const legacyUploadsDir = path.join(__dirname, "../uploads");
+if (fs.existsSync(legacyUploadsDir)) {
+  // Backward compatibility for previously stored local file URLs.
+  app.use("/uploads", express.static(legacyUploadsDir));
+}
 
 app.get("/", (req, res) => {
   res.send("API is running");
@@ -31,6 +34,7 @@ app.get("/", (req, res) => {
 app.use("/api/listings", listingRoutes);
 app.use("/api/conversations", messagingRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/media", mediaRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

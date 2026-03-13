@@ -5,7 +5,8 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+    "dev": "nodemon src/index.js",
+    "migrate:uploads-to-gridfs": "node scripts/migrateLegacyUploadsToGridFs.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
