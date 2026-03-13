@@ -2,6 +2,7 @@ const Listing = require("../models/Listing");
 const Conversation = require("../models/Conversation");
 const User = require("../models/User");
 const { buildMediaUrl, uploadBufferToMediaStorage } = require("../utils/mediaStorage");
+const { sendNotificationToUsers } = require("../services/pushNotificationService");
 /**
  * Applies the listing CRUD operations
  * @param {*} req 
@@ -30,19 +31,34 @@ const sanitizeMedia = (media) => {
         .filter((item) => item.url && isHttpUrl(item.url));
 };
 
-const syncListingStatusToConversations = async (req, listing) => {
+const getListingStatusPushBody = (listing) => {
+    const status = String(listing?.status || "available").toLowerCase();
+    const title = String(listing?.title || "Your listing").trim();
+
+    if (status === "sold") {
+        return `"${title}" was marked as sold.`;
+    }
+    if (status === "pending") {
+        return `"${title}" is now pending.`;
+    }
+    if (status === "deleted") {
+        return `"${title}" is no longer available.`;
+    }
+    return `"${title}" was updated.`;
+};
+
+const syncListingStatusToConversations = async (req, listing, options = {}) => {
     await Conversation.updateMany(
         { listingId: listing._id },
         { $set: { "listingSnapshot.status": listing.status } }
     );
 
     const io = req.app.get("io");
-    if (!io) return;
 
     const relatedConversations = await Conversation.find({ listingId: listing._id })
         .select("buyerEmail sellerEmail")
         .lean();
-    const recipients = Array.from(
+    const conversationRecipients = Array.from(
         new Set(
             relatedConversations.flatMap((conversation) => [
                 normalizeEmail(conversation.buyerEmail),
@@ -51,16 +67,53 @@ const syncListingStatusToConversations = async (req, listing) => {
         )
     ).filter(Boolean);
 
-    recipients.forEach((email) => {
-        io.to(`user:${email}`).emit("inbox:refresh", {
+    if (io) {
+        conversationRecipients.forEach((email) => {
+            io.to(`user:${email}`).emit("inbox:refresh", {
+                listingId: String(listing._id),
+                status: listing.status,
+            });
+        });
+        io.emit("listing:status", {
             listingId: String(listing._id),
             status: listing.status,
         });
-    });
-    io.emit("listing:status", {
-        listingId: String(listing._id),
-        status: listing.status,
-    });
+    }
+
+    const usersWhoSavedListing = await User.find({ savedListingIds: listing._id })
+        .select("email")
+        .lean();
+    const actorEmail = normalizeEmail(options?.actorEmail);
+    const pushRecipients = new Set(
+        [
+            ...conversationRecipients,
+            normalizeEmail(listing.userEmail),
+            normalizeEmail(listing.buyerEmail),
+            ...usersWhoSavedListing.map((user) => normalizeEmail(user.email)),
+        ].filter(Boolean)
+    );
+    if (actorEmail) {
+        pushRecipients.delete(actorEmail);
+    }
+
+    if (pushRecipients.size > 0) {
+        void sendNotificationToUsers({
+            emails: Array.from(pushRecipients),
+            preferenceKey: "listingUpdates",
+            title: "Listing updated",
+            body: getListingStatusPushBody(listing),
+            data: {
+                type: "listing_update",
+                listingId: String(listing._id),
+                status: String(listing.status || ""),
+            },
+        }).catch((notificationError) => {
+            console.warn(
+                "[notifications] Failed to send listing update notification:",
+                notificationError instanceof Error ? notificationError.message : String(notificationError)
+            );
+        });
+    }
 };
 
 // GET /api/listings (all listings)
@@ -185,7 +238,7 @@ const purchaseListing = async (req, res) => {
         listing.buyerEmail = normalizedBuyerEmail;
         listing.purchasedAt = new Date();
         await listing.save();
-        await syncListingStatusToConversations(req, listing);
+        await syncListingStatusToConversations(req, listing, { actorEmail: normalizedBuyerEmail });
         res.json({ message: "Purchase successful" });
     } catch (err) {
         res.status(500).json({ message: err.message || "Server error" });
@@ -213,7 +266,7 @@ const markListingPending = async (req, res) => {
         listing.buyerEmail = undefined;
         listing.purchasedAt = undefined;
         await listing.save();
-        await syncListingStatusToConversations(req, listing);
+        await syncListingStatusToConversations(req, listing, { actorEmail: normalizeEmail(userEmail) });
         res.json(listing);
     } catch (err) {
         res.status(500).json({ message: err.message || "Server error" });
@@ -241,7 +294,7 @@ const markListingSold = async (req, res) => {
         listing.buyerEmail = undefined;
         listing.purchasedAt = undefined;
         await listing.save();
-        await syncListingStatusToConversations(req, listing);
+        await syncListingStatusToConversations(req, listing, { actorEmail: normalizeEmail(userEmail) });
         res.json(listing);
     } catch (err) {
         res.status(500).json({ message: err.message || "Server error" });
@@ -277,7 +330,7 @@ const deleteListing = async (req, res) => {
         listing.status = "deleted";
         await listing.save();
         await User.updateMany({}, { $pull: { savedListingIds: listing._id } });
-        await syncListingStatusToConversations(req, listing);
+        await syncListingStatusToConversations(req, listing, { actorEmail: normalizeEmail(listing.userEmail) });
         res.json({ message: "Listing deleted" });
     } catch (err) {
         res.status(500).json({ message: err.message || "Server error" });

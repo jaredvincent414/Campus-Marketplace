@@ -1,7 +1,15 @@
 // API service for backend communication
 import Constants from "expo-constants";
 import { Platform } from "react-native";
-import { Conversation, Listing, ListingMedia, ListingMediaType, Message, UserProfile } from "../types";
+import {
+  Conversation,
+  Listing,
+  ListingMedia,
+  ListingMediaType,
+  Message,
+  NotificationPreferences,
+  UserProfile,
+} from "../types";
 
 const API_PORT = "5001";
 const EXPO_HOST_URI = (Constants.expoConfig as { hostUri?: string } | null)?.hostUri;
@@ -22,6 +30,14 @@ const withNetworkHint = (error: unknown, action: string): Error => {
     );
   }
   return error instanceof Error ? error : new Error(`${action} failed`);
+};
+
+const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
+  messages: true,
+  listingUpdates: true,
+  savedItemUpdates: false,
+  system: true,
+  marketing: false,
 };
 
 export const normalizeMediaUrl = (rawUrl?: string | null): string | undefined => {
@@ -47,6 +63,10 @@ const normalizeUserProfile = (raw: any): UserProfile => ({
   purchasesCount: Number.isFinite(Number(raw?.purchasesCount))
     ? Number(raw.purchasesCount)
     : 0,
+  notificationPreferences: {
+    ...DEFAULT_NOTIFICATION_PREFERENCES,
+    ...(raw?.notificationPreferences || {}),
+  },
   createdAt: raw?.createdAt,
   updatedAt: raw?.updatedAt,
 });
@@ -186,6 +206,113 @@ export const saveUserProfilePhoto = async (
     return normalizeUserProfile(raw);
   } catch (error) {
     throw withNetworkHint(error, "Saving profile photo");
+  }
+};
+
+export const registerPushTokenForUser = async (
+  email: string,
+  input: {
+    token: string;
+    platform: "ios" | "android" | "web";
+    provider?: "expo";
+    deviceId?: string | null;
+  }
+): Promise<UserProfile> => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/api/users/${encodeURIComponent(email.trim().toLowerCase())}/push-token`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(input),
+      }
+    );
+    if (!response.ok) {
+      let message = `Failed to register push token: ${response.statusText}`;
+      try {
+        const data = await response.json();
+        if (data?.message) {
+          message = data.message;
+        }
+      } catch {
+        // fallback message above
+      }
+      throw new Error(message);
+    }
+    const raw = await response.json();
+    return normalizeUserProfile(raw);
+  } catch (error) {
+    throw withNetworkHint(error, "Registering push notifications");
+  }
+};
+
+export const deactivatePushTokenForUser = async (
+  email: string,
+  token?: string
+): Promise<UserProfile> => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/api/users/${encodeURIComponent(email.trim().toLowerCase())}/push-token`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(token ? { token } : {}),
+      }
+    );
+    if (!response.ok) {
+      let message = `Failed to deactivate push token: ${response.statusText}`;
+      try {
+        const data = await response.json();
+        if (data?.message) {
+          message = data.message;
+        }
+      } catch {
+        // fallback message above
+      }
+      throw new Error(message);
+    }
+    const raw = await response.json();
+    return normalizeUserProfile(raw);
+  } catch (error) {
+    throw withNetworkHint(error, "Updating push token status");
+  }
+};
+
+export const updateUserNotificationPreferences = async (
+  email: string,
+  preferences: Partial<NotificationPreferences>
+): Promise<UserProfile> => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/api/users/${encodeURIComponent(email.trim().toLowerCase())}/notification-preferences`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(preferences),
+      }
+    );
+    if (!response.ok) {
+      let message = `Failed to update notification preferences: ${response.statusText}`;
+      try {
+        const data = await response.json();
+        if (data?.message) {
+          message = data.message;
+        }
+      } catch {
+        // fallback message above
+      }
+      throw new Error(message);
+    }
+    const raw = await response.json();
+    return normalizeUserProfile(raw);
+  } catch (error) {
+    throw withNetworkHint(error, "Updating notification settings");
   }
 };
 

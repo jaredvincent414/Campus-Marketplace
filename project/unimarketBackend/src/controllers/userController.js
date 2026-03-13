@@ -3,6 +3,10 @@ const Listing = require("../models/Listing");
 const mongoose = require("mongoose");
 const { buildMediaUrl, deleteMediaByUrl, uploadBufferToMediaStorage } = require("../utils/mediaStorage");
 const { isValidCampusEmail, normalizeEmail } = require("../utils/emailValidation");
+const {
+  DEFAULT_NOTIFICATION_PREFERENCES,
+  isExpoPushToken,
+} = require("../services/pushNotificationService");
 
 const isHttpUrl = (value = "") => {
   try {
@@ -13,13 +17,34 @@ const isHttpUrl = (value = "") => {
   }
 };
 
+const normalizeNotificationPreferences = (input = {}) => ({
+  ...DEFAULT_NOTIFICATION_PREFERENCES,
+  ...(input || {}),
+});
+
+const applyNotificationPreferenceUpdates = (existing = {}, incoming = {}) => {
+  const next = normalizeNotificationPreferences(existing);
+  const allowedKeys = Object.keys(DEFAULT_NOTIFICATION_PREFERENCES);
+  let changed = false;
+
+  allowedKeys.forEach((key) => {
+    if (!Object.prototype.hasOwnProperty.call(incoming, key)) return;
+    next[key] = Boolean(incoming[key]);
+    changed = true;
+  });
+
+  return { next, changed };
+};
+
 const normalizeUserPayload = (user) => {
   const plain = user?.toObject ? user.toObject() : user;
+  const { pushTokens, ...safePlain } = plain || {};
   return {
-    ...plain,
-    savedListingIds: Array.isArray(plain?.savedListingIds)
-      ? plain.savedListingIds.map((id) => String(id))
+    ...safePlain,
+    savedListingIds: Array.isArray(safePlain?.savedListingIds)
+      ? safePlain.savedListingIds.map((id) => String(id))
       : [],
+    notificationPreferences: normalizeNotificationPreferences(safePlain?.notificationPreferences),
   };
 };
 
@@ -78,8 +103,131 @@ const createOrUpdateUser = async (req, res, next) => {
       email: normalizedEmail,
       profileImageUrl: nextPhoto,
       savedListingIds: [],
+      notificationPreferences: DEFAULT_NOTIFICATION_PREFERENCES,
     });
     return res.status(201).json(await withPurchasesCount(normalizeUserPayload(user)));
+  } catch (err) {
+    next(err);
+  }
+};
+
+// PUT /api/users/:email/push-token
+const upsertUserPushToken = async (req, res, next) => {
+  try {
+    const normalizedEmail = normalizeEmail(req.params.email);
+    const token = String(req.body?.token || "").trim();
+    const platform = String(req.body?.platform || "ios").trim().toLowerCase();
+    const provider = String(req.body?.provider || "expo").trim().toLowerCase();
+    const deviceId = String(req.body?.deviceId || "").trim() || null;
+
+    if (!normalizedEmail || !token) {
+      return res.status(400).json({ message: "Email and token are required" });
+    }
+    if (!isExpoPushToken(token)) {
+      return res.status(400).json({ message: "Invalid Expo push token" });
+    }
+    if (provider !== "expo") {
+      return res.status(400).json({ message: "Only provider 'expo' is currently supported" });
+    }
+    if (!["ios", "android", "web"].includes(platform)) {
+      return res.status(400).json({ message: "platform must be ios, android, or web" });
+    }
+
+    const user = await User.findOne({ email: normalizedEmail });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const now = new Date();
+    const existing = (user.pushTokens || []).find((entry) => entry.token === token);
+    if (existing) {
+      existing.provider = "expo";
+      existing.platform = platform;
+      existing.deviceId = deviceId;
+      existing.isActive = true;
+      existing.updatedAt = now;
+    } else {
+      user.pushTokens.push({
+        token,
+        provider: "expo",
+        platform,
+        deviceId,
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    await user.save();
+    return res.json(await withPurchasesCount(normalizeUserPayload(user)));
+  } catch (err) {
+    next(err);
+  }
+};
+
+// DELETE /api/users/:email/push-token
+const deactivateUserPushToken = async (req, res, next) => {
+  try {
+    const normalizedEmail = normalizeEmail(req.params.email);
+    const token = String(req.body?.token || "").trim();
+
+    if (!normalizedEmail) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    const user = await User.findOne({ email: normalizedEmail });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const now = new Date();
+    if (token) {
+      (user.pushTokens || []).forEach((entry) => {
+        if (entry.token === token) {
+          entry.isActive = false;
+          entry.updatedAt = now;
+        }
+      });
+    } else {
+      (user.pushTokens || []).forEach((entry) => {
+        entry.isActive = false;
+        entry.updatedAt = now;
+      });
+    }
+
+    await user.save();
+    return res.json(await withPurchasesCount(normalizeUserPayload(user)));
+  } catch (err) {
+    next(err);
+  }
+};
+
+// PUT /api/users/:email/notification-preferences
+const updateNotificationPreferences = async (req, res, next) => {
+  try {
+    const normalizedEmail = normalizeEmail(req.params.email);
+    if (!normalizedEmail) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    const user = await User.findOne({ email: normalizedEmail });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const { next, changed } = applyNotificationPreferenceUpdates(
+      user.notificationPreferences,
+      req.body || {}
+    );
+    if (!changed) {
+      return res.status(400).json({
+        message: "Provide at least one notification preference to update",
+      });
+    }
+
+    user.notificationPreferences = next;
+    await user.save();
+    return res.json(await withPurchasesCount(normalizeUserPayload(user)));
   } catch (err) {
     next(err);
   }
@@ -254,6 +402,9 @@ const removeSavedListingForUser = async (req, res, next) => {
 module.exports = {
   createOrUpdateUser,
   getUserByEmail,
+  upsertUserPushToken,
+  deactivateUserPushToken,
+  updateNotificationPreferences,
   uploadUserProfilePhoto,
   updateUserProfilePhoto,
   getSavedListings,
