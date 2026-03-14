@@ -88,14 +88,14 @@ Navigation intent:
       <br />
       <strong>Landing</strong>
       <br />
-      First-touch screen that introduces the marketplace and routes users into account creation or sign-in.
+      Brand entry point.
     </td>
     <td align="center">
       <img src="docs/images/navigation/createAccountscreen.png" alt="UniMarket create account screen" width="210" />
       <br />
       <strong>Create Account</strong>
       <br />
-      Campus-specific onboarding flow before the user enters the tab-based app experience.
+      Student onboarding.
     </td>
   </tr>
 </table>
@@ -110,14 +110,14 @@ Navigation intent:
       <br />
       <strong>Explore</strong>
       <br />
-      Default home screen with search, category chips, listing cards, and inline favorite actions.
+      Browse and discover.
     </td>
     <td align="center">
       <img src="docs/images/navigation/saved.png" alt="UniMarket saved listings screen" width="210" />
       <br />
       <strong>Saved</strong>
       <br />
-      Lightweight revisit space for items the user wants to keep track of while browsing campus listings.
+      Revisit favorites.
     </td>
   </tr>
 </table>
@@ -132,21 +132,21 @@ Navigation intent:
       <br />
       <strong>My Listings</strong>
       <br />
-      Seller-facing workspace for reviewing active inventory and starting a new listing.
+      Seller workspace.
     </td>
     <td align="center">
       <img src="docs/images/navigation/profile.png" alt="UniMarket profile screen" width="210" />
       <br />
       <strong>Profile</strong>
       <br />
-      Personal account hub with marketplace stats, avatar management, and shortcuts into seller and message flows.
+      Account hub.
     </td>
   </tr>
 </table>
 
 <p align="center"><strong>Management Flow:</strong> My Listings &rarr; Profile &rarr; account actions, seller tools, and message access</p>
 
-Messages is part of the persistent bottom navigation even though a message screen screenshot is not included here. In practice, it sits alongside Explore, My Listings, Saved, and Profile as a core tab destination.
+Messages remains part of the persistent bottom navigation even though it is not shown here.
 
 ## Tech Stack
 
