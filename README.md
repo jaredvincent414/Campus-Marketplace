@@ -9,6 +9,8 @@ This repository contains:
 ## Table of Contents
 - [Overview](#overview)
 - [Core Features](#core-features)
+- [App Navigation](#app-navigation)
+- [Screen Walkthrough](#screen-walkthrough)
 - [Tech Stack](#tech-stack)
 - [Repository Structure](#repository-structure)
 - [Getting Started](#getting-started)
@@ -55,24 +57,126 @@ The backend serves both REST APIs and realtime events for a responsive messaging
 
 ### Mobile UX
 - Branded landing + auth flow
-- Tab architecture: Explore, My Listings, Messages, Profile
+- Tab architecture: Explore, My Listings, Messages, Saved, Profile
 - Listing detail modal with image carousel and seller actions
 - Theming system (`src/theme/colors.ts`) used across app surfaces
 
 ### Routing / Entry Point
 - Frontend runtime entry is `expo-router/entry` (see `project/unimarketFrontend/package.json`).
-- `project/unimarketFrontend/App.js` and `project/unimarketFrontend/screens/*` exist as earlier stack-navigation artifacts and are not the active production route tree.
+- The active route tree lives under `project/unimarketFrontend/app`.
+
+## App Navigation
+UniMarket uses a straightforward campus marketplace flow:
+
+1. Landing page -> Create Account / Sign In
+2. Successful auth -> Explore tab
+3. Bottom navigation stays persistent across the app: Explore, My Listings, Messages, Saved, Profile
+4. Profile includes shortcuts to My Listings and Messages, while Saved remains a dedicated tab for quick access
+
+Primary path for a new user:
+
+`Landing -> Create Account -> Explore -> Saved / My Listings / Profile`
+
+Primary path for a returning user:
+
+`Sign In -> Explore -> Listing Detail / Messages / Saved / Profile`
+
+## Screen Walkthrough
+
+### Entry flow
+<table>
+  <tr>
+    <td align="center">
+      <img src="docs/images/navigation/LandingPage.png" alt="UniMarket landing page" width="250" />
+      <br />
+      <strong>Landing</strong>
+      <br />
+      Brand entry point with clear account creation and sign-in actions.
+    </td>
+    <td align="center">
+      <img src="docs/images/navigation/createAccountscreen.png" alt="UniMarket create account screen" width="250" />
+      <br />
+      <strong>Create Account</strong>
+      <br />
+      Campus-focused onboarding before users enter the marketplace.
+    </td>
+  </tr>
+</table>
+
+### Core tab navigation
+<table>
+  <tr>
+    <td align="center">
+      <img src="docs/images/navigation/explorePage.png" alt="UniMarket explore screen" width="250" />
+      <br />
+      <strong>Explore</strong>
+      <br />
+      Default post-auth home screen for browsing listings, searching, filtering, and saving items.
+    </td>
+    <td align="center">
+      <img src="docs/images/navigation/myListings.png" alt="UniMarket my listings screen" width="250" />
+      <br />
+      <strong>My Listings</strong>
+      <br />
+      Seller workspace for reviewing active listings and starting a new listing.
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="docs/images/navigation/saved.png" alt="UniMarket saved listings screen" width="250" />
+      <br />
+      <strong>Saved</strong>
+      <br />
+      Dedicated tab for favorited items that users want to revisit later.
+    </td>
+    <td align="center">
+      <img src="docs/images/navigation/profile.png" alt="UniMarket populated profile screen" width="250" />
+      <br />
+      <strong>Profile</strong>
+      <br />
+      Account hub with avatar management, metrics, and shortcuts into seller and messaging flows.
+    </td>
+  </tr>
+</table>
+
+### Profile states
+<table>
+  <tr>
+    <td align="center">
+      <img src="docs/images/navigation/newProfile.png" alt="UniMarket empty profile state" width="250" />
+      <br />
+      <strong>New Profile State</strong>
+      <br />
+      Zero-state profile for new users with no listings, no saves, and no purchases yet.
+    </td>
+    <td align="center">
+      <img src="docs/images/navigation/profile.png" alt="UniMarket active profile state" width="250" />
+      <br />
+      <strong>Active Profile State</strong>
+      <br />
+      Populated profile showing marketplace activity, verification status, and reusable account actions.
+    </td>
+  </tr>
+</table>
+
+Notes on navigation:
+- Explore is the main discovery entry point after authentication.
+- My Listings is seller-focused and accessed from the tab bar or from Profile.
+- Messages is always available from the bottom tab bar, even though it is not shown in the screenshots above.
+- Saved is intentionally a dedicated bottom-tab destination rather than a repeated Profile shortcut.
+- Profile acts as the personal account hub, not the primary browsing surface.
 
 ## Tech Stack
 
 ### Frontend (`project/unimarketFrontend`)
-- Expo SDK 51
-- React Native 0.74
+- Expo SDK 54
+- React Native 0.81
 - Expo Router
 - TypeScript
 - AsyncStorage (local auth/account persistence)
 - Socket.IO client
 - Expo Image Picker + Location
+- Expo Notifications
 
 ### Backend (`project/unimarketBackend`)
 - Node.js + Express
@@ -84,6 +188,9 @@ The backend serves both REST APIs and realtime events for a responsive messaging
 ## Repository Structure
 ```text
 .
+├── docs
+│   └── images
+│       └── navigation
 ├── README.md
 └── project
     ├── unimarketBackend
@@ -93,8 +200,10 @@ The backend serves both REST APIs and realtime events for a responsive messaging
     │   │   ├── middleware
     │   │   ├── models
     │   │   ├── routes
+    │   │   ├── services
+    │   │   ├── utils
     │   │   └── index.js
-    │   └── uploads/
+    │   └── scripts
     └── unimarketFrontend
         ├── app
         │   ├── (auth)
@@ -116,7 +225,8 @@ The backend serves both REST APIs and realtime events for a responsive messaging
 - Node.js 18+
 - npm 9+
 - MongoDB instance (Atlas or local)
-- Expo Go (for device testing) or iOS/Android simulator
+- Expo Go or iOS/Android simulator for general UI testing
+- Development build for push-notification testing
 
 ### 1) Install dependencies
 ```bash
@@ -167,7 +277,9 @@ npm start
 Then launch with:
 - `i` for iOS simulator
 - `a` for Android emulator
-- Expo Go by scanning QR
+- Expo Go by scanning QR for standard UI flows
+
+For push notifications, use a development build instead of Expo Go.
 
 ## API Reference
 Base URL: `http://<host>:5001`
@@ -295,7 +407,7 @@ npm run web   # expo start --web
 - Set `EXPO_PUBLIC_API_BASE_URL` to your machine LAN IP (not `localhost`) when using a physical device.
 
 ### Uploaded media not rendering
-- Confirm backend serves `/uploads` and the returned URL is reachable from device.
+- Confirm the returned `/api/media/:id` URL is reachable from the device or simulator.
 - Re-check file type and size limits in `uploadMiddleware`.
 
 ### Messages not updating live
