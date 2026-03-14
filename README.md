@@ -32,57 +32,46 @@ UniMarket is a **mobile-first peer-to-peer marketplace** designed for university
 
 ## App Screens
 
-### Onboarding
+<div align="center">
+
 <table>
   <tr>
-    <td align="center">
-      <img src="docs/images/navigation/LandingPage.png" alt="Landing page" width="210" />
-      <br /><strong>Landing</strong><br />
-      Brand entry point
+    <td align="center" valign="top" width="160">
+      <img src="docs/images/navigation/LandingPage.png" alt="Landing" width="140" /><br />
+      <sub><b>Landing</b></sub><br />
+      <sub>Brand entry point</sub>
     </td>
-    <td align="center">
-      <img src="docs/images/navigation/createAccountscreen.png" alt="Create account" width="210" />
-      <br /><strong>Create Account</strong><br />
-      .edu-gated student sign-up
+    <td align="center" valign="top" width="160">
+      <img src="docs/images/navigation/createAccountscreen.png" alt="Create Account" width="140" /><br />
+      <sub><b>Create Account</b></sub><br />
+      <sub>.edu-gated sign-up</sub>
+    </td>
+    <td align="center" valign="top" width="160">
+      <img src="docs/images/navigation/explorePage.png" alt="Explore" width="140" /><br />
+      <sub><b>Explore</b></sub><br />
+      <sub>Browse & search listings</sub>
+    </td>
+    <td align="center" valign="top" width="160">
+      <img src="docs/images/navigation/saved.png" alt="Saved" width="140" /><br />
+      <sub><b>Saved</b></sub><br />
+      <sub>Revisit favorites</sub>
+    </td>
+    <td align="center" valign="top" width="160">
+      <img src="docs/images/navigation/myListings.png" alt="My Listings" width="140" /><br />
+      <sub><b>My Listings</b></sub><br />
+      <sub>Seller workspace</sub>
+    </td>
+    <td align="center" valign="top" width="160">
+      <img src="docs/images/navigation/profile.png" alt="Profile" width="140" /><br />
+      <sub><b>Profile</b></sub><br />
+      <sub>Account hub</sub>
     </td>
   </tr>
 </table>
 
-### Core Experience
-<table>
-  <tr>
-    <td align="center">
-      <img src="docs/images/navigation/explorePage.png" alt="Explore" width="210" />
-      <br /><strong>Explore</strong><br />
-      Browse and search listings
-    </td>
-    <td align="center">
-      <img src="docs/images/navigation/saved.png" alt="Saved listings" width="210" />
-      <br /><strong>Saved</strong><br />
-      Favorited items, revisit anytime
-    </td>
-  </tr>
-</table>
+`Landing` → `Create Account` → `Explore` → `Saved` / `My Listings` / `Messages` / `Profile`
 
-### Seller Tools
-<table>
-  <tr>
-    <td align="center">
-      <img src="docs/images/navigation/myListings.png" alt="My listings" width="210" />
-      <br /><strong>My Listings</strong><br />
-      Create, manage, and close listings
-    </td>
-    <td align="center">
-      <img src="docs/images/navigation/profile.png" alt="Profile" width="210" />
-      <br /><strong>Profile</strong><br />
-      Account hub and seller settings
-    </td>
-  </tr>
-</table>
-
-> **Navigation flow:** Landing → Create Account → Explore → Save / Message / List / Profile
->
-> Messages lives in the persistent bottom tab bar — accessible from any screen during buyer or seller workflows.
+</div>
 
 ---
 
