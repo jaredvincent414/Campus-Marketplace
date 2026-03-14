@@ -1,415 +1,332 @@
+<div align="center">
+
 # UniMarket
 
-A mobile-first campus marketplace where students can list items, discover local deals, and coordinate transactions through listing-bound messaging.
+**A full-stack campus marketplace built for students.**
+List items, discover local deals, and close transactions — all from your phone.
 
-This repository contains:
-- `project/unimarketFrontend`: Expo + React Native client (Expo Router)
-- `project/unimarketBackend`: Node.js + Express + MongoDB API with Socket.IO realtime messaging
+![React Native](https://img.shields.io/badge/React_Native-0.81-61DAFB?style=flat-square&logo=react&logoColor=white)
+![Expo](https://img.shields.io/badge/Expo_SDK-54-000020?style=flat-square&logo=expo&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-Express-339933?style=flat-square&logo=node.js&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-47A248?style=flat-square&logo=mongodb&logoColor=white)
+![Socket.IO](https://img.shields.io/badge/Socket.IO-Realtime-010101?style=flat-square&logo=socket.io&logoColor=white)
 
-## Table of Contents
-- [Overview](#overview)
-- [Core Features](#core-features)
-- [App Navigation](#app-navigation)
-- [Screen Walkthrough](#screen-walkthrough)
-- [Tech Stack](#tech-stack)
-- [Repository Structure](#repository-structure)
-- [Getting Started](#getting-started)
-- [Environment Variables](#environment-variables)
-- [Running the App](#running-the-app)
-- [API Reference](#api-reference)
-- [Realtime Events (Socket.IO)](#realtime-events-socketio)
-- [Data Model](#data-model)
-- [Authentication Notes](#authentication-notes)
-- [Scripts](#scripts)
-- [Troubleshooting](#troubleshooting)
-- [Roadmap Suggestions](#roadmap-suggestions)
-- [Contributing](#contributing)
-- [License](#license)
+</div>
 
-## Overview
-UniMarket is designed for campus buying/selling workflows:
-- browse active listings
-- create listings with required photos and optional video
-- message sellers directly from listing context
-- mark listings pending/sold and reflect status in conversations
+---
 
-The backend serves both REST APIs and realtime events for a responsive messaging experience.
+## What is UniMarket?
 
-## Core Features
+UniMarket is a **mobile-first peer-to-peer marketplace** designed for university campuses. Students can buy and sell items within their community, with real-time in-app messaging tied directly to individual listings.
 
-### Marketplace
-- Create, read, update, soft-delete listings
-- Listing media upload (`image/*` + `video/*`, max 40 MB per file)
-- Required at least one image when creating a listing
-- Listing statuses: `available`, `pending`, `sold`, `deleted`
-- Prevent users from buying their own listing
+**Highlights for recruiters:**
+- Full-stack solo project — from database schema to mobile UI
+- Real-time messaging with Socket.IO (bidirectional events, room-based architecture)
+- File upload pipeline with MongoDB GridFS for image and video media (up to 40 MB per file)
+- File-based routing with Expo Router (similar to Next.js app directory model)
+- Theming system, context-based state, and reusable component architecture
+- `.edu` email-gated sign-up with client-side auth and clear path to production JWT upgrade
 
-### Messaging
-- Conversation identity constrained by `(listingId, buyerEmail, sellerEmail)`
-- Reopens existing thread instead of creating duplicates
-- Inbox with unread counts and listing context
-- Message send + mark-as-read flow
-- Seller actions: mark listing pending/sold in-thread
-- Realtime updates with Socket.IO:
-  - new messages
-  - inbox refresh triggers
-  - listing status sync
+---
 
-### Mobile UX
-- Branded landing + auth flow
-- Tab architecture: Explore, My Listings, Messages, Saved, Profile
-- Listing detail modal with image carousel and seller actions
-- Theming system (`src/theme/colors.ts`) used across app surfaces
+## App Screens
 
-### Routing / Entry Point
-- Frontend runtime entry is `expo-router/entry` (see `project/unimarketFrontend/package.json`).
-- The active route tree lives under `project/unimarketFrontend/app`.
-
-## App Navigation
-UniMarket uses a mobile-first navigation model with a clear handoff from onboarding into persistent tab-based browsing.
-
-<p align="center">
-  <strong>Landing</strong> &rarr; <strong>Create Account</strong> &rarr; <strong>Explore</strong> &rarr; <strong>Saved</strong> / <strong>My Listings</strong> / <strong>Messages</strong> / <strong>Profile</strong>
-</p>
-
-Navigation intent:
-- Explore is the default post-auth home for search, category browsing, and saving items.
-- Saved is a dedicated revisit surface for favorited listings.
-- My Listings and Profile support the seller/account side of the product without interrupting browsing.
-- Messages stays globally accessible from the bottom tab bar during buyer and seller workflows.
-
-## Screen Walkthrough
-
-### 1. Join the marketplace
+### Onboarding
 <table>
   <tr>
     <td align="center">
-      <img src="docs/images/navigation/LandingPage.png" alt="UniMarket landing page" width="210" />
-      <br />
-      <strong>Landing</strong>
-      <br />
-      Brand entry point.
+      <img src="docs/images/navigation/LandingPage.png" alt="Landing page" width="210" />
+      <br /><strong>Landing</strong><br />
+      Brand entry point
     </td>
     <td align="center">
-      <img src="docs/images/navigation/createAccountscreen.png" alt="UniMarket create account screen" width="210" />
-      <br />
-      <strong>Create Account</strong>
-      <br />
-      Student onboarding.
+      <img src="docs/images/navigation/createAccountscreen.png" alt="Create account" width="210" />
+      <br /><strong>Create Account</strong><br />
+      .edu-gated student sign-up
     </td>
   </tr>
 </table>
 
-<p align="center"><strong>Entry Flow:</strong> Landing &rarr; Create Account &rarr; Explore</p>
-
-### 2. Browse and save
+### Core Experience
 <table>
   <tr>
     <td align="center">
-      <img src="docs/images/navigation/explorePage.png" alt="UniMarket explore screen" width="210" />
-      <br />
-      <strong>Explore</strong>
-      <br />
-      Browse and discover.
+      <img src="docs/images/navigation/explorePage.png" alt="Explore" width="210" />
+      <br /><strong>Explore</strong><br />
+      Browse and search listings
     </td>
     <td align="center">
-      <img src="docs/images/navigation/saved.png" alt="UniMarket saved listings screen" width="210" />
-      <br />
-      <strong>Saved</strong>
-      <br />
-      Revisit favorites.
+      <img src="docs/images/navigation/saved.png" alt="Saved listings" width="210" />
+      <br /><strong>Saved</strong><br />
+      Favorited items, revisit anytime
     </td>
   </tr>
 </table>
 
-<p align="center"><strong>Discovery Flow:</strong> Explore &rarr; Save for later &rarr; Message or purchase from listing context</p>
-
-### 3. Manage activity
+### Seller Tools
 <table>
   <tr>
     <td align="center">
-      <img src="docs/images/navigation/myListings.png" alt="UniMarket my listings screen" width="210" />
-      <br />
-      <strong>My Listings</strong>
-      <br />
-      Seller workspace.
+      <img src="docs/images/navigation/myListings.png" alt="My listings" width="210" />
+      <br /><strong>My Listings</strong><br />
+      Create, manage, and close listings
     </td>
     <td align="center">
-      <img src="docs/images/navigation/profile.png" alt="UniMarket profile screen" width="210" />
-      <br />
-      <strong>Profile</strong>
-      <br />
-      Account hub.
+      <img src="docs/images/navigation/profile.png" alt="Profile" width="210" />
+      <br /><strong>Profile</strong><br />
+      Account hub and seller settings
     </td>
   </tr>
 </table>
 
-<p align="center"><strong>Management Flow:</strong> My Listings &rarr; Profile &rarr; account actions, seller tools, and message access</p>
+> **Navigation flow:** Landing → Create Account → Explore → Save / Message / List / Profile
+>
+> Messages lives in the persistent bottom tab bar — accessible from any screen during buyer or seller workflows.
 
-Messages remains part of the persistent bottom navigation even though it is not shown here.
+---
 
 ## Tech Stack
 
-### Frontend (`project/unimarketFrontend`)
-- Expo SDK 54
-- React Native 0.81
-- Expo Router
-- TypeScript
-- AsyncStorage (local auth/account persistence)
-- Socket.IO client
-- Expo Image Picker + Location
-- Expo Notifications
+| Layer | Technology |
+|---|---|
+| Mobile framework | Expo SDK 54 + React Native 0.81 |
+| Language | TypeScript 5.9 |
+| Navigation | Expo Router (file-based, similar to Next.js App Router) |
+| Real-time | Socket.IO (bidirectional, room-based messaging) |
+| Media | Expo Image Picker, GridFS via Multer |
+| Local persistence | AsyncStorage |
+| Push notifications | Expo Notifications |
+| API | Node.js + Express |
+| Database | MongoDB + Mongoose |
+| Dev tooling | Nodemon, dotenv |
 
-### Backend (`project/unimarketBackend`)
-- Node.js + Express
-- MongoDB + Mongoose
-- Socket.IO
-- Multer (media uploads)
-- CORS + dotenv
+---
 
-## Repository Structure
-```text
-.
-├── docs
-│   └── images
-│       └── navigation
-├── README.md
-└── project
-    ├── unimarketBackend
-    │   ├── src
-    │   │   ├── config
-    │   │   ├── controllers
-    │   │   ├── middleware
-    │   │   ├── models
-    │   │   ├── routes
-    │   │   ├── services
-    │   │   ├── utils
-    │   │   └── index.js
-    │   └── scripts
-    └── unimarketFrontend
-        ├── app
-        │   ├── (auth)
-        │   ├── (tabs)
-        │   └── (modals)
-        ├── src
-        │   ├── components
-        │   ├── contexts
-        │   ├── hooks
-        │   ├── services
-        │   ├── theme
-        │   └── types.ts
-        └── app.json
+## Architecture
+
 ```
+.
+├── project/
+│   ├── unimarketBackend/          # REST API + Socket.IO server
+│   │   └── src/
+│   │       ├── controllers/       # Route handlers
+│   │       ├── models/            # Mongoose schemas (User, Listing, Conversation, Message)
+│   │       ├── routes/            # Express routers
+│   │       ├── services/          # Business logic
+│   │       ├── middleware/        # Upload, CORS, error handling
+│   │       └── index.js           # Entry point
+│   └── unimarketFrontend/         # Expo + React Native client
+│       ├── app/
+│       │   ├── (auth)/            # Onboarding screens
+│       │   ├── (tabs)/            # Bottom tab navigation
+│       │   └── (modals)/          # Overlay screens
+│       └── src/
+│           ├── components/        # Shared UI components
+│           ├── contexts/          # Global state (auth, theme)
+│           ├── hooks/             # Custom React hooks
+│           ├── services/          # API + Socket.IO client layer
+│           └── theme/             # Design tokens (colors, spacing)
+└── docs/images/                   # README screenshots
+```
+
+---
+
+## Key Features
+
+### Marketplace
+- Create listings with title, description, price, category, and media
+- Image/video uploads via multipart form-data, stored in MongoDB GridFS
+- Listing lifecycle: `available` → `pending` → `sold` (soft-delete for `deleted`)
+- Self-purchase prevention enforced at the API layer
+
+### Real-Time Messaging
+- Conversations are scoped to `(listingId, buyerEmail, sellerEmail)` — no duplicate threads
+- Inbox with per-conversation unread counts and listing context snapshots
+- Sellers can mark a listing `pending` or `sold` directly from within a conversation thread
+- Socket.IO rooms: `user:<email>` for inbox refreshes, `conversation:<id>` for live messages
+
+### Mobile UX
+- Bottom tab navigation: **Explore, My Listings, Messages, Saved, Profile**
+- Listing detail modal with image carousel
+- Consistent design via centralized theme (`src/theme/colors.ts`)
+
+---
 
 ## Getting Started
 
 ### Prerequisites
 - Node.js 18+
-- npm 9+
-- MongoDB instance (Atlas or local)
-- Expo Go or iOS/Android simulator for general UI testing
-- Development build for push-notification testing
+- MongoDB (Atlas or local)
+- Expo Go app or iOS/Android simulator
 
-### 1) Install dependencies
+### 1. Install dependencies
 ```bash
 cd project/unimarketBackend && npm install
 cd ../unimarketFrontend && npm install
 ```
 
-### 2) Configure environment
-Create backend env file:
+### 2. Configure environment
 
-`project/unimarketBackend/.env`
+**Backend** — `project/unimarketBackend/.env`
 ```env
 PORT=5001
 MONGO_URI=<your_mongodb_connection_string>
 ```
 
-Optional frontend override for API base URL:
-
-`project/unimarketFrontend/.env` (or shell env)
+**Frontend (optional)** — `project/unimarketFrontend/.env`
 ```env
 EXPO_PUBLIC_API_BASE_URL=http://<your-machine-ip>:5001
 ```
+> If not set, the frontend auto-resolves the host from the Expo dev server.
 
-## Environment Variables
+### 3. Run the app
 
-### Backend
-- `PORT` (required): API server port
-- `MONGO_URI` (required): MongoDB connection string
-
-### Frontend
-- `EXPO_PUBLIC_API_BASE_URL` (optional): Explicit API URL override.
-  - If not set, frontend resolves host from Expo dev host with platform fallbacks.
-
-## Running the App
-
-### Start backend
 ```bash
-cd project/unimarketBackend
-npm run dev
+# Terminal 1 — backend
+cd project/unimarketBackend && npm run dev
+
+# Terminal 2 — frontend
+cd project/unimarketFrontend && npm start
 ```
 
-### Start frontend
-```bash
-cd project/unimarketFrontend
-npm start
-```
+Then in the Expo CLI: press `i` for iOS simulator, `a` for Android, or scan the QR code with Expo Go.
 
-Then launch with:
-- `i` for iOS simulator
-- `a` for Android emulator
-- Expo Go by scanning QR for standard UI flows
+> Push notifications require a development build — Expo Go does not support them.
 
-For push notifications, use a development build instead of Expo Go.
+---
 
 ## API Reference
+
 Base URL: `http://<host>:5001`
 
-### Health
-- `GET /` → `"API is running"`
-
 ### Users
-- `POST /api/users`
-  - Body:
-    ```json
-    { "name": "Jane Doe", "email": "jane@school.edu" }
-    ```
-  - Behavior: create or update by normalized email
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/users` | Create or update user by email |
 
 ### Listings
-- `GET /api/listings`
-  - Returns listings with status `available` or `pending`
-- `GET /api/listings/user/:email`
-  - Returns listings for user where status != `deleted`
-- `GET /api/listings/:id`
-- `POST /api/listings`
-  - Required: `title`, `description`, `price`, `userEmail`
-  - Requires at least one image via `imageUrl` or `media[]`
-- `POST /api/listings/upload`
-  - Multipart form-data with field `media`
-  - Returns uploaded `url` and inferred media `type`
-- `POST /api/listings/:id/purchase`
-  - Body: `{ "buyerEmail": "..." }`
-  - Prevents self-purchase
-- `POST /api/listings/:id/mark-pending`
-  - Body: `{ "userEmail": "seller@..." }`
-- `POST /api/listings/:id/mark-sold`
-  - Body: `{ "userEmail": "seller@..." }`
-- `PUT /api/listings/:id`
-- `DELETE /api/listings/:id`
-  - Soft-delete by setting status to `deleted`
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/listings` | All active/pending listings |
+| `GET` | `/api/listings/user/:email` | Listings by user |
+| `GET` | `/api/listings/:id` | Single listing |
+| `POST` | `/api/listings` | Create listing (requires ≥1 image) |
+| `POST` | `/api/listings/upload` | Upload media (multipart) |
+| `POST` | `/api/listings/:id/purchase` | Initiate purchase (no self-buy) |
+| `POST` | `/api/listings/:id/mark-pending` | Seller marks as pending |
+| `POST` | `/api/listings/:id/mark-sold` | Seller marks as sold |
+| `PUT` | `/api/listings/:id` | Update listing |
+| `DELETE` | `/api/listings/:id` | Soft-delete listing |
 
 ### Conversations & Messages
-- `GET /api/conversations?userEmail=...`
-- `POST /api/conversations`
-  - Body: `{ "listingId": "...", "buyerEmail": "..." }`
-  - Creates or reopens listing-bound conversation
-- `GET /api/conversations/:id?userEmail=...`
-- `GET /api/conversations/:id/messages?userEmail=...`
-- `POST /api/conversations/:id/messages`
-  - Body: `{ "senderEmail": "...", "body": "..." }`
-- `POST /api/conversations/:id/read`
-  - Body: `{ "userEmail": "..." }`
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/conversations` | Inbox for user |
+| `POST` | `/api/conversations` | Create or reopen thread |
+| `GET` | `/api/conversations/:id` | Single conversation |
+| `GET` | `/api/conversations/:id/messages` | Message history |
+| `POST` | `/api/conversations/:id/messages` | Send message |
+| `POST` | `/api/conversations/:id/read` | Mark messages read |
 
-## Realtime Events (Socket.IO)
-Server URL: same host/port as REST API
+---
 
-### Client emits
-- `join-user` with normalized email
-- `join-conversation` with conversation id
-- `leave-conversation` with conversation id
+## Socket.IO Events
 
-### Server emits
-- `message:new` (to `conversation:<id>` room)
-- `inbox:refresh` (to `user:<email>` room)
-- `listing:status` (broadcast)
-- `conversation:read` (to conversation room)
+| Direction | Event | Description |
+|---|---|---|
+| Client → Server | `join-user` | Subscribe to user inbox room |
+| Client → Server | `join-conversation` | Subscribe to conversation room |
+| Client → Server | `leave-conversation` | Unsubscribe from conversation room |
+| Server → Client | `message:new` | New message in a conversation |
+| Server → Client | `inbox:refresh` | Trigger inbox reload for a user |
+| Server → Client | `listing:status` | Broadcast listing status change |
+| Server → Client | `conversation:read` | Mark conversation as read |
 
-## Data Model
+---
 
-### `User`
-- `name` (string, required)
-- `email` (string, required, unique)
+## Data Models
 
-### `Listing`
-- `title`, `description`, `price`, `category`, `userEmail`
-- `imageUrl` (primary image)
-- `media[]` with `{ type: image|video, url }`
-- `status`: `available|pending|sold|deleted`
+<details>
+<summary><strong>User</strong></summary>
 
-### `Conversation`
-- `listingId` (ref Listing)
-- `buyerEmail`, `sellerEmail`
-- `lastMessage`, `lastMessageAt`
-- unread counters per role
-- `status`: `active|archived|blocked|closed`
-- `listingSnapshot` (title/price/thumbnail/status)
-- Unique index: `(listingId, buyerEmail, sellerEmail)`
+| Field | Type | Notes |
+|---|---|---|
+| `name` | String | Required |
+| `email` | String | Required, unique, normalized |
 
-### `Message`
-- `conversationId` (ref Conversation)
-- `senderEmail`, `body`
-- `sentAt`, `readAt`
-- `deliveryStatus`: `sent|delivered`
+</details>
 
-## Authentication Notes
-Current auth is client-side account persistence (AsyncStorage):
-- sign-up validates `.edu` email format
-- accounts are stored locally on device
-- backend user endpoint is used as best-effort profile sync
+<details>
+<summary><strong>Listing</strong></summary>
 
-This is suitable for rapid prototyping, not production security.
-For production, replace with server-validated auth (e.g., JWT/session/OAuth).
+| Field | Type | Notes |
+|---|---|---|
+| `title`, `description`, `price` | String/Number | Required |
+| `category`, `userEmail` | String | |
+| `imageUrl` | String | Primary image |
+| `media[]` | `{ type, url }` | `image` or `video` |
+| `status` | Enum | `available \| pending \| sold \| deleted` |
 
-## Scripts
+</details>
 
-### Backend
-```bash
-npm run dev   # nodemon src/index.js
-npm start     # node src/index.js
-```
+<details>
+<summary><strong>Conversation</strong></summary>
 
-### Frontend
-```bash
-npm start     # expo start
-npm run ios   # expo start --ios
-npm run android # expo start --android
-npm run web   # expo start --web
-```
+| Field | Type | Notes |
+|---|---|---|
+| `listingId` | ObjectId ref | |
+| `buyerEmail`, `sellerEmail` | String | Composite unique key with `listingId` |
+| `lastMessage`, `lastMessageAt` | String/Date | |
+| `status` | Enum | `active \| archived \| blocked \| closed` |
+| `listingSnapshot` | Object | Denormalized title/price/thumbnail/status |
+
+</details>
+
+<details>
+<summary><strong>Message</strong></summary>
+
+| Field | Type | Notes |
+|---|---|---|
+| `conversationId` | ObjectId ref | |
+| `senderEmail`, `body` | String | |
+| `sentAt`, `readAt` | Date | |
+| `deliveryStatus` | Enum | `sent \| delivered` |
+
+</details>
+
+---
+
+## Auth Notes
+
+Current auth uses **client-side persistence via AsyncStorage** — suitable for a portfolio prototype:
+- Sign-up validates `.edu` email format
+- Accounts stored locally and synced to backend as a best-effort profile
+- The clear production upgrade path is server-side JWT or OAuth (middleware stubs are already structured for it)
+
+---
 
 ## Troubleshooting
 
-### `Port 5001 is already in use`
-- Another backend instance is running.
-- Stop existing process or change `PORT` in backend `.env`.
+| Issue | Fix |
+|---|---|
+| `Port 5001 already in use` | Stop the existing backend process or change `PORT` in `.env` |
+| `Network request failed` on device | Set `EXPO_PUBLIC_API_BASE_URL` to your machine's LAN IP (not `localhost`) |
+| Uploaded media not rendering | Confirm `/api/media/:id` is reachable from the device; re-check file type/size limits |
+| Messages not updating live | Verify Socket.IO connection; ensure `join-user` and `join-conversation` are emitted after connect |
 
-### Mobile shows `Network request failed`
-- Ensure backend is running and reachable from your device.
-- Set `EXPO_PUBLIC_API_BASE_URL` to your machine LAN IP (not `localhost`) when using a physical device.
+---
 
-### Uploaded media not rendering
-- Confirm the returned `/api/media/:id` URL is reachable from the device or simulator.
-- Re-check file type and size limits in `uploadMiddleware`.
+## Roadmap
 
-### Messages not updating live
-- Verify Socket.IO connection to backend URL.
-- Ensure user emits `join-user` and conversation emits `join-conversation`.
+- [ ] Replace client-side auth with server-validated JWT
+- [ ] Add authorization middleware on all protected routes
+- [ ] Pagination and search/filter for listings and messages
+- [ ] Automated tests (unit, integration, E2E)
+- [ ] CI pipeline for lint, typecheck, and test
 
-## Roadmap Suggestions
-- Replace local auth with secure server-side authentication
-- Add authorization middleware on protected routes
-- Add automated tests (unit/integration/E2E)
-- Add pagination and search/filter endpoints for listings and messages
-- Add CI for lint/typecheck/test
-
-## Contributing
-1. Create a feature branch.
-2. Keep changes scoped and include validation steps.
-3. Open a PR with:
-   - summary
-   - screenshots (frontend changes)
-   - test/verification notes
+---
 
 ## License
+
 No license file is currently present in this repository.
