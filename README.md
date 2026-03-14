@@ -66,105 +66,87 @@ The backend serves both REST APIs and realtime events for a responsive messaging
 - The active route tree lives under `project/unimarketFrontend/app`.
 
 ## App Navigation
-UniMarket uses a straightforward campus marketplace flow:
+UniMarket uses a mobile-first navigation model with a clear handoff from onboarding into persistent tab-based browsing.
 
-1. Landing page -> Create Account / Sign In
-2. Successful auth -> Explore tab
-3. Bottom navigation stays persistent across the app: Explore, My Listings, Messages, Saved, Profile
-4. Profile includes shortcuts to My Listings and Messages, while Saved remains a dedicated tab for quick access
+<p align="center">
+  <strong>Landing</strong> &rarr; <strong>Create Account</strong> &rarr; <strong>Explore</strong> &rarr; <strong>Saved</strong> / <strong>My Listings</strong> / <strong>Messages</strong> / <strong>Profile</strong>
+</p>
 
-Primary path for a new user:
-
-`Landing -> Create Account -> Explore -> Saved / My Listings / Profile`
-
-Primary path for a returning user:
-
-`Sign In -> Explore -> Listing Detail / Messages / Saved / Profile`
+Navigation intent:
+- Explore is the default post-auth home for search, category browsing, and saving items.
+- Saved is a dedicated revisit surface for favorited listings.
+- My Listings and Profile support the seller/account side of the product without interrupting browsing.
+- Messages stays globally accessible from the bottom tab bar during buyer and seller workflows.
 
 ## Screen Walkthrough
 
-### Entry flow
+### 1. Join the marketplace
 <table>
   <tr>
     <td align="center">
-      <img src="docs/images/navigation/LandingPage.png" alt="UniMarket landing page" width="250" />
+      <img src="docs/images/navigation/LandingPage.png" alt="UniMarket landing page" width="210" />
       <br />
       <strong>Landing</strong>
       <br />
-      Brand entry point with clear account creation and sign-in actions.
+      Brand entry point.
     </td>
     <td align="center">
-      <img src="docs/images/navigation/createAccountscreen.png" alt="UniMarket create account screen" width="250" />
+      <img src="docs/images/navigation/createAccountscreen.png" alt="UniMarket create account screen" width="210" />
       <br />
       <strong>Create Account</strong>
       <br />
-      Campus-focused onboarding before users enter the marketplace.
+      Student onboarding.
     </td>
   </tr>
 </table>
 
-### Core tab navigation
+<p align="center"><strong>Entry Flow:</strong> Landing &rarr; Create Account &rarr; Explore</p>
+
+### 2. Browse and save
 <table>
   <tr>
     <td align="center">
-      <img src="docs/images/navigation/explorePage.png" alt="UniMarket explore screen" width="250" />
+      <img src="docs/images/navigation/explorePage.png" alt="UniMarket explore screen" width="210" />
       <br />
       <strong>Explore</strong>
       <br />
-      Default post-auth home screen for browsing listings, searching, filtering, and saving items.
+      Browse and discover.
     </td>
     <td align="center">
-      <img src="docs/images/navigation/myListings.png" alt="UniMarket my listings screen" width="250" />
-      <br />
-      <strong>My Listings</strong>
-      <br />
-      Seller workspace for reviewing active listings and starting a new listing.
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
-      <img src="docs/images/navigation/saved.png" alt="UniMarket saved listings screen" width="250" />
+      <img src="docs/images/navigation/saved.png" alt="UniMarket saved listings screen" width="210" />
       <br />
       <strong>Saved</strong>
       <br />
-      Dedicated tab for favorited items that users want to revisit later.
-    </td>
-    <td align="center">
-      <img src="docs/images/navigation/profile.png" alt="UniMarket populated profile screen" width="250" />
-      <br />
-      <strong>Profile</strong>
-      <br />
-      Account hub with avatar management, metrics, and shortcuts into seller and messaging flows.
+      Revisit favorites.
     </td>
   </tr>
 </table>
 
-### Profile states
+<p align="center"><strong>Discovery Flow:</strong> Explore &rarr; Save for later &rarr; Message or purchase from listing context</p>
+
+### 3. Manage activity
 <table>
   <tr>
     <td align="center">
-      <img src="docs/images/navigation/newProfile.png" alt="UniMarket empty profile state" width="250" />
+      <img src="docs/images/navigation/myListings.png" alt="UniMarket my listings screen" width="210" />
       <br />
-      <strong>New Profile State</strong>
+      <strong>My Listings</strong>
       <br />
-      Zero-state profile for new users with no listings, no saves, and no purchases yet.
+      Seller workspace.
     </td>
     <td align="center">
-      <img src="docs/images/navigation/profile.png" alt="UniMarket active profile state" width="250" />
+      <img src="docs/images/navigation/profile.png" alt="UniMarket profile screen" width="210" />
       <br />
-      <strong>Active Profile State</strong>
+      <strong>Profile</strong>
       <br />
-      Populated profile showing marketplace activity, verification status, and reusable account actions.
+      Account hub.
     </td>
   </tr>
 </table>
 
-Notes on navigation:
-- Explore is the main discovery entry point after authentication.
-- My Listings is seller-focused and accessed from the tab bar or from Profile.
-- Messages is always available from the bottom tab bar, even though it is not shown in the screenshots above.
-- Saved is intentionally a dedicated bottom-tab destination rather than a repeated Profile shortcut.
-- Profile acts as the personal account hub, not the primary browsing surface.
+<p align="center"><strong>Management Flow:</strong> My Listings &rarr; Profile &rarr; account actions, seller tools, and message access</p>
+
+Messages remains part of the persistent bottom navigation even though it is not shown here.
 
 ## Tech Stack
 
